@@ -25,7 +25,7 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
-    - ${{ input.path }}
+    - ${{ inputs.path }}
     - ${{ inputs.publish }}
   env:
     CVE_USER : ${{ inputs.cve-user }}
