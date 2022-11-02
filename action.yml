@@ -2,15 +2,33 @@
 name: 'Hello World'
 description: 'Greet someone and record the time'
 inputs:
-  who-to-greet:  # id of input
-    description: 'Who to greet'
-    required: true
-    default: 'World'
-outputs:
-  time: # id of output
-    description: 'The time we greeted you'
+  cve-user:  
+    description: 'CVE services user name (usually the email address)'
+    required: false
+  cve-org:  
+    description: 'CVE services organisation'
+    required: false
+  cve-api-key:
+    description: 'CVE services api key (Please store this in a GitHub secret)'
+    required: false
+  cve-environment:
+    description: 'CVE services environment (defaults to test'
+    required: false
+    default: test
+  publish:
+    description: 'When to publish to the default branch (default: true/false/is_default_branch)'
+    default: false
+  path:
+    description: 'Path to check and submit'
+    default: "."
 runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
-    - ${{ inputs.who-to-greet }}
+    - ${{ input.path }}
+    - ${{ inputs.publish }}
+  env:
+    CVE_USER : ${{ inputs.cve-user }}
+    CVE_ORG : ${{ inputs.cve-org }}
+    CVE_API_KEY : ${{ inputs.cve-api-key }}
+    CVE_ENVIRONMENT : ${{ inputs.cve-environment }}
