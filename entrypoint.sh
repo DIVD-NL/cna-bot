@@ -18,17 +18,17 @@ echo $10
 #    - ${{ inputs.reserve }}
 
 set -x
-if [[ ! -z $3 ]]; then
+if [[ "$3" != "" ]]; then
 	SKIP="--skip $3"
 fi
-if [[ ! -z $4 ]]; then
+if [[ "$4" != "" ]]; then
 	RESERVED="--min-reserved $4"
 fi
-if [[ ! -z $5 ]]; then
+if [[ "$5" != "" ]]; then
 	RESERVE="--reserve $5"
 fi
-if [[ -z $CVE_USER || -z $CVE_ORG || -z $CVE_API_KEY || -z $CVE_ENVIRONMENT ]] ; then
-	echo "AUthentication variables for cvelib are not set"
+if [[ "$CVE_USER" = "" || "$CVE_ORG" == "" || "$CVE_API_KEY" = "" || "$CVE_ENVIRONMENT" == "" ]] ; then
+	echo "Authentication variables for cvelib are not set"
 	exit 1
 fi
 
