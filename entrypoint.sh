@@ -1,5 +1,7 @@
-#!/bin/sh -l
+#!/bin/sh 
+echo "$#"
 echo "Path: $1"
 echo "Publish: $2"
-pwd
+
+cd $1
 ls -al

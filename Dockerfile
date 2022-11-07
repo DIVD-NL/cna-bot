@@ -1,5 +1,8 @@
 # Container image that runs your code
-FROM alpine:3.10
+FROM alpine:latest
+
+RUN apk update && apk add python3 py3-pip
+RUN pip install cvelib json
 
 # Copies your code file from your action repository to the filesystem path `/` of the container
 COPY entrypoint.sh /entrypoint.sh

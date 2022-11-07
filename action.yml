@@ -21,6 +21,9 @@ inputs:
   path:
     description: 'Path to check and submit'
     default: "."
+  ignore:
+    description: 'Comma separted list of checks to ignore.'
+    default: ""
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -28,7 +31,7 @@ runs:
     - ${{ inputs.path }}
     - ${{ inputs.publish }}
   env:
-    CVE_USER : ${{ inputs.cve-user }}
-    CVE_ORG : ${{ inputs.cve-org }}
-    CVE_API_KEY : ${{ inputs.cve-api-key }}
+    CVE_USER :        ${{ inputs.cve-user }}
+    CVE_ORG :         ${{ inputs.cve-org }}
+    CVE_API_KEY :     ${{ inputs.cve-api-key }}
     CVE_ENVIRONMENT : ${{ inputs.cve-environment }}
