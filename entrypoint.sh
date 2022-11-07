@@ -32,6 +32,7 @@ if [[ "$CVE_USER" = "" || "$CVE_ORG" == "" || "$CVE_API_KEY" = "" || "$CVE_ENVIR
 	exit 1
 fi
 
+git config --global --add safe.directory /github/workspace
 git log -1 --pretty="format:%ci" README.md
 
 /run/cve_check.py --path $1 $SKIP $RESERVED $RESERVE --schema /run/cve50.json
