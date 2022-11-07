@@ -149,6 +149,8 @@ if __name__ == '__main__':
     parser.add_argument('--list', action="count", default=0, help="list all checks and exit" )
     parser.add_argument('--min-reserved', type=int, metavar="N", default=0, help="Minimum number of reserved IDs for the current year" )
     parser.add_argument('--reserve', type=int, metavar="N", default=0, help="Reserve N new entries if reserved for this year is below minimum")
+    parser.add_argument('--schema', type=str, metavar="./cve50.json", default="./cve50.json", help="Path to the CVE json50 schema file")
+
 
     args = parser.parse_args()
 
@@ -160,9 +162,13 @@ if __name__ == '__main__':
 
     skips=args.skip.split(",")
 
-    f = open("cve50.json")
-    json50schema = json.load(f)
-    f.close()
+    if os.path.exists(args.schema) :
+        f = open(args.schema)
+        json50schema = json.load(f)
+        f.close()
+    else:
+        print("Schema file does not exist",file=sys.stderr)
+        ecit(255)
 
     # Is CVE lib installed
     cvelib_path=exec("which cve")

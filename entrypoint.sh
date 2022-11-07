@@ -32,9 +32,11 @@ if [[ "$CVE_USER" = "" || "$CVE_ORG" == "" || "$CVE_API_KEY" = "" || "$CVE_ENVIR
 	exit 1
 fi
 
-./cve_check.py --path $1 $SKIP $RESERVED $RESERVE
+git log -1 --pretty="format:%ci" README.md
+
+/run/cve_check.py --path $1 $SKIP $RESERVED $RESERVE --schema /run/cve50.json
 
 if [[ "$2" == "true" ]]; then
 	echo "Need to publish"
-	./cve_publish_update.py --path $1
+	/run/cve_publish_update.py --path $1
 fi
