@@ -1,5 +1,5 @@
 # action.yml
-name: 'Hello World'
+name: 'CVE RSUS check and upload'
 description: 'Greet someone and record the time'
 inputs:
   cve-user:  
@@ -24,12 +24,19 @@ inputs:
   ignore:
     description: 'Comma separted list of checks to ignore.'
     default: ""
+  min-reserved:
+    description: 'Minimum number of reserved records for the current year'
+    default: 0
+  reserve:
+    description: 'Minimum number of records to reserve in one go (0=do not make reservations)'
+    default: 0
 runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
     - ${{ inputs.path }}
     - ${{ inputs.publish }}
+    - ${{ inputs.ignore }}
   env:
     CVE_USER :        ${{ inputs.cve-user }}
     CVE_ORG :         ${{ inputs.cve-org }}

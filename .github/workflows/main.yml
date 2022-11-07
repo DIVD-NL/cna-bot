@@ -19,3 +19,4 @@ jobs:
           cve-api-key :     ${{ secrets.CVE_API_KEY }}
           cve-environment:  test
           path:             test-cves
+          publish:          ${{ is_default_branch }}
