@@ -33,3 +33,8 @@ if [[ "$CVE_USER" = "" || "$CVE_ORG" == "" || "$CVE_API_KEY" = "" || "$CVE_ENVIR
 fi
 
 ./cve_check.py --path $1 $SKIP $RESERVED $RESERVE
+
+if [[ "$2" == "true" ]]; then
+	echo "Need to publish"
+	./cve_publish_update.py --path $1
+fi
