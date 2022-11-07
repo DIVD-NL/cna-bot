@@ -2,7 +2,7 @@
 FROM alpine:latest
 
 RUN apk update && apk add python3 py3-pip
-RUN pip install cvelib jsonschema
+RUN pip install cvelib jsonschema git
 
 # Copies your code file from your action repository to the filesystem path `/` of the container
 COPY program/* /run/
