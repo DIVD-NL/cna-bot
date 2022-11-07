@@ -19,3 +19,4 @@ jobs:
           cve-environment:  test
           path:             test-cves
           publish:          ${{ github.ref == 'refs/heads/master' }}
+          ignore:           published_in_path

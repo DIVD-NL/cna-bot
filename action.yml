@@ -4,16 +4,16 @@ description: 'Greet someone and record the time'
 inputs:
   cve-user:  
     description: 'CVE services user name (usually the email address)'
-    required: false
+    required: true
   cve-org:  
     description: 'CVE services organisation'
-    required: false
+    required: true
   cve-api-key:
     description: 'CVE services api key (Please store this in a GitHub secret)'
-    required: false
+    required: true
   cve-environment:
     description: 'CVE services environment (defaults to test'
-    required: false
+    required: true
     default: test
   publish:
     description: 'When to publish to the default branch (default: true/false/is_default_branch)'
@@ -37,6 +37,8 @@ runs:
     - ${{ inputs.path }}
     - ${{ inputs.publish }}
     - ${{ inputs.ignore }}
+    - ${{ inputs.min-reserved }}
+    - ${{ inputs.reserve }}
   env:
     CVE_USER :        ${{ inputs.cve-user }}
     CVE_ORG :         ${{ inputs.cve-org }}
