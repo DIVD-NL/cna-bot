@@ -1,6 +1,8 @@
 # action.yml
 name: 'CVE RSUS check and upload'
 description: 'Check CVE records and (optionally) submit them to the CVE database.'
+icon: check
+color: yellow
 inputs:
   cve-user:  
     description: 'CVE services user name (usually the email address)'
