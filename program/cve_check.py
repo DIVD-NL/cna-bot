@@ -47,8 +47,8 @@ def published_in_repo(args):
                 if filename in files:
                     found = True
                     break
-        if not found:
-            results.append("No json file found for {}".format(cve["cve_id"]))
+            if not found:
+                results.append("No json file found for {}".format(cve["cve_id"]))
     if len(results) > 0:
         return False, "\n".join(results)
     else:
@@ -196,7 +196,7 @@ if __name__ == '__main__':
         f.close()
     else:
         print("Schema file does not exist",file=sys.stderr)
-        ecit(255)
+        exit(255)
 
     # Is CVE lib installed
     cvelib_path=exec("which cve")
