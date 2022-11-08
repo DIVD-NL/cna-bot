@@ -1,15 +1,4 @@
 #!/bin/sh 
-echo $#
-echo $1
-echo $2
-echo $3
-echo $4
-echo $5
-echo $6
-echo $7
-echo $8
-echo $9
-echo $10
 #  args:
 #    - ${{ inputs.path }}
 #    - ${{ inputs.publish }}
@@ -17,7 +6,10 @@ echo $10
 #    - ${{ inputs.min-reserved }}
 #    - ${{ inputs.reserve }}
 
-set -x
+# Fail if we encounter an error
+set -e
+
+# Process command line arguments
 if [[ "$3" != "" ]]; then
 	SKIP="--skip $3"
 fi
@@ -27,17 +19,21 @@ fi
 if [[ "$5" != "" ]]; then
 	RESERVE="--reserve $5"
 fi
+
+# Check if we have CVE Services credentials
 if [[ "$CVE_USER" = "" || "$CVE_ORG" == "" || "$CVE_API_KEY" = "" || "$CVE_ENVIRONMENT" == "" ]] ; then
-	echo "Authentication variables for cvelib are not set"
+	echo "Authentication variables for cvelib are not set."
 	exit 1
 fi
 
+# Need to declare this directory safe, to get git commit time
 git config --global --add safe.directory $PWD
-git log -1 --pretty="format:%ci" README.md
 
+# Check the CVE records
+echo "*** Checking CVE records ***"
 /run/cve_check.py --path $1 $SKIP $RESERVED $RESERVE --schema /run/cve50.json
 
 if [[ "$2" == "true" ]]; then
-	echo "Need to publish"
+	echo "*** Publishing/updating CVE records ***"
 	/run/cve_publish_update.py --path $1
 fi
