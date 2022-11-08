@@ -6,8 +6,8 @@ import re
 import json
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import best_match
-#import cvelib
 import datetime
+import sys
 
 # General checks
 
@@ -106,12 +106,40 @@ def file_name(file,json_data,args) :
     else:
         return False, "\n".join(results)
 
-def has_record(file,json_data,args):
+def has_record(file,json_data,args) :
     cve_id = os.path.basename(file).replace(".json","")
     for cve in cves:
         if cve["cve_id"] == cve_id:
             return True, None
     return False, "You have not published or reserved {}".format(cve_id)
+
+def state_match(file,json_data,args) :
+    if "cveMetadata" in json_data :
+        cve_id = json_data["cveMetadata"]["cveId"]
+        metadata = { "state" : "Not ours" }
+        for cve in cves :
+            if cve["cve_id"] == cve_id :
+                metadata = cve
+                break
+        if metadata["state"] == json_data["cveMetadata"]["state"] :
+            # Ok
+            return True, None
+        if json_data["cveMetadata"]["state"] == "REJECTED"  :
+            return False, "State mismatch: local is 'REJECTED' but remote is '{}'".format(metadata["state"])
+        if json_data["cveMetadata"]["state"] == "PUBLISHED" and metadata["state"] == "REJECTED" :
+            return False, "State mismatch: local is 'REJECTED' but remote is '{}'".format(metadata["state"])
+        if json_data["cveMetadata"]["state"] == "RESERVED" :
+            return False, "State mismatch: local is 'REJECTED' but remote is '{}'".format(metadata["state"])
+        return True, None
+    else:
+        return False, "JSON invalid"
+
+def publisher_match(file,json_data,args) :
+    cve_id = json_data["cveMetadata"]["cveId"]
+    metadata = cve_exec("show {}".format(cve_id))
+    if metadata["owning_cna"] != org["short_name"] :
+        return False, "Owner mismatch: remote is owned by '{}' but we are '{}'".format(metadata["owning_cna"],org["short_name"])
+    return True, None
 
 # Checks object and global variables
 
@@ -121,9 +149,9 @@ checks = {
     "json_valid"        : { "type": "file", "func": file_valid_json1,  "description" : "Check if the file name/location is valid" },
     "filename"          : { "type": "file", "func": file_name,         "description" : "Check if a file is valid JSON" },
     "has_record"        : { "type": "file", "func": has_record,        "description" : "Check if a CVE ID is reserved or published for this CVE record" },
+    "state_match"       : { "type": "file", "func": state_match,       "description" : "Check if local and remote CVE record is consistent" },
+    "publisher_match"   : { "type": "file", "func": has_record,        "description" : "Check if CVE record is owned by us" },
 }
-
-org = {}
 
 cves = []
 
@@ -157,7 +185,7 @@ if __name__ == '__main__':
     if args.list > 0 :
         print("The following checks are available:")
         for id in checks:
-            print("{:10s} - {}".format(id,checks[id]["description"]))
+            print("{:15s} - {}".format(id,checks[id]["description"]))
         exit(0)
 
     skips=args.skip.split(",")
@@ -184,7 +212,7 @@ if __name__ == '__main__':
     check_pass = True
     for id in checks:
         if id not in skips and checks[id]["type"] != "file":
-            print("{:10s}...".format(id),end='')
+            print("{:15s}...".format(id),end='')
             passed, result = checks[id]["func"](args)
             if passed :
                 print("PASS")
@@ -207,7 +235,7 @@ if __name__ == '__main__':
                     json_data={}
                 for id in checks:
                     if id not in skips and checks[id]["type"] == "file":
-                        print("{:10s}...".format(id),end='')
+                        print("{:15s}...".format(id),end='')
                         passed, result = checks[id]["func"](filename,json_data,args)
                         if passed :
                             print("PASS")
