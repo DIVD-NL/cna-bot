@@ -45,8 +45,107 @@ Minimum number of records to reserve in one go (0=do not make reservations)
 
 ## Example usage
 
-**Soon**
+See: https://github.com/DIVD-NL/cve-records-test
 
-uses: actions/hello-world-docker-action@v2
-with:
-  who-to-greet: 'Mona the Octocat'
+In this repo the CVE records are in `./records` and it has this workflow configuration
+
+```
+# test_and_update_cve_records.yml
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    branches:
+      - 'main'
+
+jobs:
+  test_and_update_cve_records:
+    runs-on: ubuntu-latest
+    steps:
+      # Get the repository's code
+      - name: Checkout
+        uses: actions/checkout@v2
+      # Check CVE records and publish them    
+      - name: CVE RSUS check and upload
+        uses: DIVD-NL/cve-rsus-validate-submit@v1
+        with: 
+          cve-user        : ${{ secrets.CVE_USER }}
+          cve-org         : ${{ secrets.CVE_ORG }}
+          cve-api-key     : ${{ secrets.CVE_API_KEY }}
+          cve-environment : test                                      # Change to prod for actual use
+          publish         : ${{ github.ref == 'refs/heads/main' }}    # Only publish when we merge into the main branch
+          path            : records/                                  # This is where the CVE records live
+          ignore          : ""                                        # Don't ignore any checks
+          min-reserved    : 10                                        # Keep at least 10 reserved records (for the current year)
+          reserve         : 10                                        # Reserve a minimum of 10 records at a time 
+```
+
+I will explain each part of the workflow
+
+
+We will run this workflow on pull requests agains main and on pushes to the main branch only
+```
+# test_and_update_cve_records.yml
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    branches:
+      - 'main'
+```
+
+The we need to check out the code
+
+```
+jobs:
+  test_and_update_cve_records:
+    runs-on: ubuntu-latest
+    steps:
+      # Get the repository's code
+      - name: Checkout
+        uses: actions/checkout@v2
+```
+
+After the code is checkout out, we are going to test the CVE records
+
+
+```
+      # Check CVE records and publish them    
+      - name: CVE RSUS check and upload
+        uses: DIVD-NL/cve-rsus-validate-submit@v1
+```
+
+The iputs that start with cve- are our CVE credentials to log in. We suggest you store these in your github secrets
+
+
+```
+        with: 
+          cve-user        : ${{ secrets.CVE_USER }}
+          cve-org         : ${{ secrets.CVE_ORG }}
+          cve-api-key     : ${{ secrets.CVE_API_KEY }}
+          cve-environment : test                                      # Change to prod for actual use
+```
+
+Next we want to instruct the action to only publish.update records if we have merged them into main.
+```
+          publish         : ${{ github.ref == 'refs/heads/main' }}    # Only publish when we merge into the main branch
+```
+
+We need to tell the action where our records live.
+```
+          path            : records/                                  # This is where the CVE records live
+```
+
+With this option we can ignore certain check, e.g. set it to `published_in_path` if you don't wat to check that each published CVE has a record in this directory.
+```
+          ignore          : ""                                        # Don't ignore any checks
+```
+
+These to items control CVE record reservation. `min-reserved` sets the minimum number of available CVE records for the (current) year. If the number of reserved records drops below this threshold the action will fail, or reserve more CVE IDs depending on the setting of `reserve`.
+If `reserve` is set to a positive number, the action will reserve this number of records. If more records are needed to go back the the minimum, this ammount will be reserved instead.
+```
+          min-reserved    : 10                                        # Keep at least 10 reserved records (for the current year)
+          reserve         : 10                                        # Reserve a minimum of 10 records at a time 
+```
