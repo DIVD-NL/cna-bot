@@ -101,4 +101,4 @@ if __name__ == '__main__':
 
                 if file_valid and json_data["cveMetadata"]["state"] != "RESERVED" and json_data["cveMetadata"]["state"] != "PUBLISHED" :
                     print("State of {} is not 'RESERVED' or 'PUBLISHED', don;t know what to do with a '{}' record. Skipping.".format(cve_id,json_data["cveMetadata"]["state"]))
-                print("\n{} record(s) published/updated.".format(updated))
+    print("\n{} record(s) published/updated.".format(updated))
