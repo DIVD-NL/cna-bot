@@ -39,7 +39,7 @@ def minimum_reserved(args) :
 def published_in_repo(args):
     results = []
     remote = {}
-    for cve in cves:
+    for cve in sorted(cves, key=lambda x: x["cve_id"]):
         filename = cve["cve_id"]+".json"
         found = False
         if cve["state"] == "PUBLISHED":
