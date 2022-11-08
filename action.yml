@@ -16,11 +16,11 @@ inputs:
     description: 'CVE services api key (Please store this in a GitHub secret)'
     required: true
   cve-environment:
-    description: 'CVE services environment (defaults to test'
+    description: 'CVE services environment (defaults to test)'
     required: true
     default: test
   publish:
-    description: 'When to publish to the default branch (default: true/false/is_default_branch)'
+    description: 'Set to `true` to publish the records to the CVE services'
     default: false
   path:
     description: 'Path to check and submit'
