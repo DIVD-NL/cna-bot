@@ -8,25 +8,35 @@ from jsonschema import Draft202012Validator
 from jsonschema.exceptions import best_match
 import datetime
 import sys
+from cvelib.cve_api import CveApi
 
 # General checks
 
 def minimum_reserved(args) :
+    global cves
     # Check if we have have the minimum number of CVE IDs reserved
     count = 0
+
     if args.min_reserved > 0:
         year = datetime.date.today().year
-        reserved = cve_exec("list --state reserved --year {}".format(year))
+        num_reserved = 0
+        reserved = []
+        for cve in cves:
+            if cve["state"] == "RESERVED" and cve["cve_year"] == str(year) :
+                reserved.append(cve)
         if len(reserved) < args.min_reserved:
             if args.reserve > 0:
                 count = args.min_reserved - len(reserved)
                 if count < args.reserve :
                     count = args.reserve
-                json_txt=cve_exec("reserve {}".format(count))
-                cves = cve_exec("list")
+                json_txt=cve_api.reserve(count, False, year)
+                cves = cve_api.list_cves()
             else:
-                return("For {}, you have {} reserved entries, this is less then the minimum number of {}".format(year, len(reserved),args.min_reserved))
-    reserved = cve_exec("list --state reserved")
+                return False, "For {}, you have {} reserved entries, this is less then the minimum number of {}".format(year, len(reserved),args.min_reserved)
+    reserved = []
+    for cve in cves:
+        if cve["state"] == "RESERVED" :
+            reserved.append(cve)
     ids = ""
     if count > 0 :
         ids = ids + "Allocated {} new CVE IDs\n".format(count)
@@ -135,11 +145,14 @@ def state_match(file,json_data,args) :
         return False, "JSON invalid"
 
 def publisher_match(file,json_data,args) :
-    cve_id = json_data["cveMetadata"]["cveId"]
-    metadata = cve_exec("show {}".format(cve_id))
-    if metadata["owning_cna"] != org["short_name"] :
-        return False, "Owner mismatch: remote is owned by '{}' but we are '{}'".format(metadata["owning_cna"],org["short_name"])
-    return True, None
+    if "cveMetadata" in json_data :
+        cve_id = json_data["cveMetadata"]["cveId"]
+        metadata = cve_api.show_cve_id(cve_id)
+        if metadata["owning_cna"] != org["short_name"] :
+            return False, "Owner mismatch: remote is owned by '{}' but we are '{}'".format(metadata["owning_cna"],org["short_name"])
+        return True, None
+    else:
+        return False, "JSON invalid"
 
 # Checks object and global variables
 
@@ -150,7 +163,7 @@ checks = {
     "filename"          : { "type": "file", "func": file_name,         "description" : "Check if a file is valid JSON" },
     "has_record"        : { "type": "file", "func": has_record,        "description" : "Check if a CVE ID is reserved or published for this CVE record" },
     "state_match"       : { "type": "file", "func": state_match,       "description" : "Check if local and remote CVE record is consistent" },
-    "publisher_match"   : { "type": "file", "func": has_record,        "description" : "Check if CVE record is owned by us" },
+    "publisher_match"   : { "type": "file", "func": publisher_match,   "description" : "Check if CVE record is owned by us" },
 }
 
 cves = []
@@ -161,12 +174,14 @@ def exec(cmd):
     stream = os.popen(cmd)
     return(stream.read())
 
-def cve_exec(arguments):
-    stream = os.popen("cve {} --raw".format(arguments))
-    json_data = json.loads(stream.read())
-    stream.close()
-    return json_data
-
+def cve_api_login() -> CveApi:
+    cve_api = CveApi(
+        username=os.getenv("CVE_USER"),
+        org=os.getenv("CVE_ORG"),
+        api_key=os.getenv("CVE_API_KEY"),
+        env=os.getenv("CVE_ENVIRONMENT")
+    )
+    return cve_api
 
 # Main
 
@@ -199,15 +214,13 @@ if __name__ == '__main__':
         exit(255)
 
     # Is CVE lib installed
-    cvelib_path=exec("which cve")
-    if cvelib_path == "":
-        print("No output for `which cve`, cvelib is no installed", file=sys.stderr)
-        exit(255)
-    org = exec("cve org")
-    if "ERROR" in org :
+    cve_api = cve_api_login()
+    try:
+        org = cve_api.show_org()
+    except:
         print("Unable to list organisation via cvelib, have you set your authentication variables?", file=sys.stderr)
         exit(255)
-    cves = cve_exec("list")
+    cves = list(cve_api.list_cves())
 
     check_pass = True
     for id in checks:
