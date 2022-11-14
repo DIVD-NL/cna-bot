@@ -11,10 +11,6 @@ from cvelib.cve_api import CveApi
 
 # Helper functions
 
-def cve_exec(bla):
-    print(bla)
-    raise "bla"
-
 def exec(cmd):
     stream = os.popen(cmd)
     return(stream.read())
@@ -118,8 +114,6 @@ if __name__ == '__main__':
                             ]
                         )
                         if diff != {}:
-                            print(diff)
-                            exit()
                             try:
                                 result = cve_api.update_published(cve_id,json_data["containers"]["cna"])
                             except Exception as e:

@@ -2,7 +2,7 @@
 FROM alpine:latest
 
 RUN apk update && apk add python3 py3-pip git
-RUN pip install cvelib jsonschema python-dateutil
+RUN pip install cvelib jsonschema python-dateutil deepdiff
 
 # Copies your code file from your action repository to the filesystem path `/` of the container
 COPY program/* /run/
