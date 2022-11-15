@@ -39,6 +39,7 @@ echo "*** Checking CVE records ***"
 /run/cve_check.py --path $1 $SKIP $RESERVED $RESERVE --schema /run/cve50.json
 
 if [[ "$2" == "true" ]]; then
+	echo
 	echo "*** Publishing/updating CVE records ***"
 	/run/cve_publish_update.py --path $1 $UPDATE_LOCAL
 
@@ -59,34 +60,43 @@ if [[ "$2" == "true" ]]; then
 		# Prevents issues with: fatal: unsafe repository ('/github/workspace' is owned by someone else)
 		git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 		git config --global --add safe.directory /github/workspace
-		git remote set-url origin "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}"
 		git config --global user.name "${GITHUB_ACTOR}"
 		git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
 		# Needed for hub binary
 		export GITHUB_USER="${GITHUB_ACTOR}"
 
-		if [[ $( git status $1 | grep "working tree clean" ) -gt 1 ]]; then
+		if [[ $( git status | grep "working tree clean" | wc -l ) -gt 0 ]]; then
 			echo "Nothing to commit, cowardly bailing out"
+			exit 0
 		else
 			# Build branch / pr
+			git clone "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}" new_repo
+			cd new_repo
+
 			echo -e "\nUpdating all branches..."
 			git fetch origin '+refs/heads/*:refs/heads/*' --update-head-ok
-
-			COUNT=$( git branch | grep "$GITHUB_BRANCH" | wc -l )
 			if [[ $( git branch | grep "$GITHUB_BRANCH" | wc -l ) -gt 0 ]] ;  then
 				git checkout $GITHUB_BRANCH
-				git pull
+				git pull origin $GITHUB_BRANCH
 			else
 				git checkout -b $GITHUB_BRANCH
 			fi
+			cp -r ../$1/* $1/
 
-			echo "Creating pull request..."
-			git reset # Unstage the rest
-			git add $1
-			git commit -m "Updating records to match remote records"
+			if [[ $( git status | grep "working tree clean" | wc -l ) -gt 0 ]]; then
+				echo "Nothing to commit, cowardly bailing out"
+				exit 0
+			fi
+			echo -e "\nCommiting changes to branch and creating pull request..."
+			git commit -am "Updating records to match remote records"
 			git push --set-upstream origin $GITHUB_BRANCH
-			DEFAULT_BRANCH=$( git remote show origin | sed -n '/HEAD branch/s/.*: //p' )
-			gh pr create --title "$GITHUB_PR_DESC" --body "Autmatic PR by https://github.com/DIVD-NL/cve-rsus-validate-submit"
+			if [[ $( gh pr view $GITHUB_BRANCH | grep "no pull requests found" | wc -l ) -gt 0 ]]; then
+				echo "A pull request for $GITHUB_BRANCH already exists"
+			else
+				gh pr create --title "$GITHUB_PR_DESC" --body "Autmatic PR by https://github.com/DIVD-NL/cve-rsus-validate-submit"
+			fi
+			cd ..
+			rm -rf new_repo
 		fi
 	fi
 fi
