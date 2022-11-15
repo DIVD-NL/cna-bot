@@ -81,6 +81,7 @@ if [[ "$2" == "true" ]]; then
 			fi
 
 			echo "Creating pull request..."
+			git reset # Unstage the rest
 			git add $1
 			git commit -m "Updating records to match remote records"
 			git push --set-upstream origin $GITHUB_BRANCH
