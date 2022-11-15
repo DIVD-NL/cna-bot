@@ -34,6 +34,7 @@ cve_api = None
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Update CVE JSON5.0 records', allow_abbrev=False)
     parser.add_argument('--path', type=str, metavar=".", default=".", help="path of directory to check")
+    parser.add_argument('--update-local', action="store_true", default=False, help="Update local records if they differ from remote records (e.g. in metadata)")
 
     args = parser.parse_args()
 
@@ -109,7 +110,7 @@ if __name__ == '__main__':
                             cve_record,
                             json_data,
                             exclude_paths= [
-                                "root['containers']['cna']['providerMetadata']['dateUpdated']",
+                                "root['containers']['cna']['providerMetadata']",
                                 "root['cveMetadata']"
                             ]
                         )
@@ -122,10 +123,20 @@ if __name__ == '__main__':
                                 print(result["message"])
                                 updated=updated+1
                         else:
-
-                            print("Record for {} is up to date".format(cve_id))
+                            print("Record for {} is up to date.".format(cve_id))
                     else:
-                        print("Record for {} is up to date".format(cve_id))
+                        print("Record for {} is up to date.".format(cve_id))
+                    if file_valid and args.update_local :
+                        cve_record = cve_api.show_cve_record(cve_id)
+                        diff = DeepDiff(
+                            cve_record,
+                            json_data
+                        )
+                        if diff != {} :
+                            f = open(filename, "w")
+                            f.write(json.dumps(cve_record, indent=2, sort_keys=True))
+                            f.close()
+                            print("Updated local records of {} with remote (meta-)data.".format(cve_id))
 
                 if file_valid and json_data["cveMetadata"]["state"] != "RESERVED" and json_data["cveMetadata"]["state"] != "PUBLISHED" :
                     print("State of {} is not 'RESERVED' or 'PUBLISHED', don't know what to do with a '{}' record. Skipping.".format(cve_id,json_data["cveMetadata"]["state"]))

@@ -43,9 +43,13 @@ Action will fail if the number of records in RESERVED state drops below this amo
 
 Minimum number of records to reserve in one go (0=do not make reservations)
 
+## `pr`
+
+Create a pull request to bring local records in line with remote records (defaults to `false`)
+
 ## Example usage
 
-See: https://github.com/DIVD-NL/cve-records-test
+See: https://github.com/DIVD-NL/cna-admin-test
 
 In this repo the CVE records are in `./records` and it has this workflow configuration
 
@@ -58,6 +62,9 @@ on:
   pull_request:
     branches:
       - 'main'
+  schedule:
+    - cron: "5 4 * * *"
+
 
 jobs:
   test_and_update_cve_records:
@@ -73,18 +80,20 @@ jobs:
           cve-user        : ${{ secrets.CVE_USER }}
           cve-org         : ${{ secrets.CVE_ORG }}
           cve-api-key     : ${{ secrets.CVE_API_KEY }}
-          cve-environment : test                                      # Change to prod for actual use
-          publish         : ${{ github.ref == 'refs/heads/main' }}    # Only publish when we merge into the main branch
-          path            : records/                                  # This is where the CVE records live
-          ignore          : ""                                        # Don't ignore any checks
-          min-reserved    : 10                                        # Keep at least 10 reserved records (for the current year)
-          reserve         : 10                                        # Reserve a minimum of 10 records at a time 
+          cve-environment : test                                        # Change to prod for actual use
+          publish         : ${{ github.ref == 'refs/heads/main' }}      # Only publish when we merge into the main branch
+          path            : records/                                    # This is where the CVE records live
+          ignore          : ""                                          # Don't ignore any checks
+          min-reserved    : 10                                          # Keep at least 10 reserved records (for the current year)
+          reserve         : 10                                          # Reserve a minimum of 10 records at a time 
+          pr              : ${{ github.event_name != 'pull_request' }}  # Create a PR when we push or run on schedule
+          github-token:     ${{ secrets.GITHUB_TOKEN }}          
 ```
 
 I will explain each part of the workflow
 
 
-We will run this workflow on pull requests agains main and on pushes to the main branch only
+We will run this workflow on pull requests agains main and on pushes to the main branch and run at 4:05 at night.
 ```
 # test_and_update_cve_records.yml
 on:
@@ -94,6 +103,8 @@ on:
   pull_request:
     branches:
       - 'main'
+  schedule:
+    - cron: "5 4 * * *"
 ```
 
 The we need to check out the code
@@ -148,4 +159,10 @@ If `reserve` is set to a positive number, the action will reserve this number of
 ```
           min-reserved    : 10                                        # Keep at least 10 reserved records (for the current year)
           reserve         : 10                                        # Reserve a minimum of 10 records at a time 
+```
+
+If the remote record does not match the local record, create a pull reuqest to update the local records. These changes should mostly be about metadata.
+```
+          pr              : ${{ github.event_name != 'pull_request' }}  # Create a PR when we push or run on schedule
+          github-token:     ${{ secrets.GITHUB_TOKEN }}          
 ```

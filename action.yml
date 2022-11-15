@@ -34,6 +34,18 @@ inputs:
   reserve:
     description: 'Minimum number of records to reserve in one go (0=do not make reservations)'
     default: 0
+  pr:
+    description: 'Create a PR to bring local records in line with remote records.'
+    default: false
+  github-token :
+    description: 'Github token, usually automatically provided via `secrets.GITHUB_TOKEN`, required when pr is set to `true`'
+  github-branch :
+    description: 'Name of the github branch to create the pull request from. Defaults to `cve_sumbit_pr`'
+    default: 'cve_submit_pr_${{ github.sha }}'
+  github-pr-description:
+    description: 'description of the github pull request. Defaults to `Automatic updates made by cve-rsus-validate-submit Github Action`'
+    default: 'Automatic updates made by cve-rsus-validate-submit Github Action'
+
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -43,8 +55,12 @@ runs:
     - ${{ inputs.ignore }}
     - ${{ inputs.min-reserved }}
     - ${{ inputs.reserve }}
+    - ${{ inputs.pr }}
   env:
     CVE_USER :        ${{ inputs.cve-user }}
     CVE_ORG :         ${{ inputs.cve-org }}
     CVE_API_KEY :     ${{ inputs.cve-api-key }}
     CVE_ENVIRONMENT : ${{ inputs.cve-environment }}
+    GITHUB_TOKEN :    ${{ inputs.github-token }}
+    GITHUB_BRANCH :   ${{ inputs.github-branch }}
+    GITHUB_PR_DESC :  ${{ inputs.github-pr-description }}
