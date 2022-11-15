@@ -43,9 +43,13 @@ Action will fail if the number of records in RESERVED state drops below this amo
 
 Minimum number of records to reserve in one go (0=do not make reservations)
 
+## `pr`
+
+Create a pull request to bring local records in line with remote records (defaults to `false`)
+
 ## Example usage
 
-See: https://github.com/DIVD-NL/cve-records-test
+See: https://github.com/DIVD-NL/cna-admin-test
 
 In this repo the CVE records are in `./records` and it has this workflow configuration
 

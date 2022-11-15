@@ -11,7 +11,6 @@ jobs:
         uses: actions/checkout@v3
       - name: Validate and submit CVE records
         uses: ./ # Uses an action in the root directory
-        id: hello
         with:
           cve-user:         ${{ secrets.CVE_USER }}
           cve-org:          ${{ secrets.CVE_ORG }}
@@ -20,3 +19,5 @@ jobs:
           path:             test-cves
           publish:          ${{ github.ref == 'refs/heads/main' }}
           ignore:           published_in_path
+          pr:               ${{ github.ref == 'refs/heads/main' }}
+          github-token:     ${{ secrets.GITHUB_TOKEN }}
