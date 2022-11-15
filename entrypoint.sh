@@ -43,7 +43,7 @@ if [[ "$2" == "true" ]]; then
 	/run/cve_publish_update.py --path $1 $UPDATE_LOCAL
 fi
 
-if [[ "$6" == "true" ]]; then
+if [[ "$6" == "true" && "$6" == "true" ]]; then
 	# Require github_token
 	if [[ -z "${GITHUB_TOKEN}" ]]; then
 	  MESSAGE='Missing input "github_token: ${{ secrets.GITHUB_TOKEN }}".'
@@ -66,20 +66,26 @@ if [[ "$6" == "true" ]]; then
 	# Needed for hub binary
 	export GITHUB_USER="${GITHUB_ACTOR}"
 
-	# Build branch / pr
-	echo -e "\nUpdating all branches..."
-	git fetch origin '+refs/heads/*:refs/heads/*' --update-head-ok
-
-	COUNT=$( git branch | grep "$GITHUB_BRANCH" | wc -l )
-	if [[ $( git branch | grep "$GITHUB_BRANCH" | wc -l ) -gt 0 ]] ;  then
-		git checkout $GITHUB_BRANCH
-		git pull
+	if [[ $( git status $1 | grep "working tree clean" ) -gt 1 ]]; then
+		echo "Nothing to commit, cowardly bailing out"
 	else
-		git checkout -b $GITHUB_BRANCH
+		# Build branch / pr
+		echo -e "\nUpdating all branches..."
+		git fetch origin '+refs/heads/*:refs/heads/*' --update-head-ok
+
+		COUNT=$( git branch | grep "$GITHUB_BRANCH" | wc -l )
+		if [[ $( git branch | grep "$GITHUB_BRANCH" | wc -l ) -gt 0 ]] ;  then
+			git checkout $GITHUB_BRANCH
+			git pull
+		else
+			git checkout -b $GITHUB_BRANCH
+		fi
+
+		echo "Creating pull request..."
+		git add $1
+		git commit -m "Updating records to match remote records"
+		git push --set-upstream origin $GITHUB_BRANCH
+		DEFAULT_BRANCH=$( git remote show origin | sed -n '/HEAD branch/s/.*: //p' )
+		gh pr create --title "$GITHUB_PR_DESC" --body "Autmatic PR by https://github.com/DIVD-NL/cve-rsus-validate-submit"
 	fi
-	git add $1
-	git commit -m "Updating records to match remote records"
-	git push --set-upstream origin $GITHUB_BRANCH
-	DEFAULT_BRANCH=$( git remote show origin | sed -n '/HEAD branch/s/.*: //p' )
-	gh pr create --title "$GITHUB_PR_DESC" --body "Autmatic PR by https://github.com/DIVD-NL/cve-rsus-validate-submit"
 fi
