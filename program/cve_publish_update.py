@@ -134,7 +134,7 @@ if __name__ == '__main__':
                         )
                         if diff != {} :
                             f = open(filename, "w")
-                            f.write(json.dumps(cve_record, indent=4, sort_keys=True))
+                            f.write(json.dumps(cve_record, indent=2, sort_keys=True))
                             f.close()
                             print("Updated local records of {} with remote (meta-)data.".format(cve_id))
 
