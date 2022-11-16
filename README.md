@@ -1,4 +1,4 @@
-# CVE RSUS validate and submit
+# CNA Bot
 
 This GitHub action validates CVE JSON 5.0 format records and (optionally) submits them to the CVE RSUS service.
 
@@ -72,10 +72,10 @@ jobs:
     steps:
       # Get the repository's code
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       # Check CVE records and publish them    
       - name: CVE RSUS check and upload
-        uses: DIVD-NL/cve-rsus-validate-submit@v1
+        uses: DIVD-NL/cna-bot@v1
         with: 
           cve-user        : ${{ secrets.CVE_USER }}
           cve-org         : ${{ secrets.CVE_ORG }}
@@ -125,7 +125,7 @@ After the code is checkout out, we are going to test the CVE records
 ```
       # Check CVE records and publish them    
       - name: CVE RSUS check and upload
-        uses: DIVD-NL/cve-rsus-validate-submit@v1
+        uses: DIVD-NL/cna-bot@v1
 ```
 
 The iputs that start with cve- are our CVE credentials to log in. We suggest you store these in your github secrets
