@@ -1,5 +1,5 @@
 # action.yml
-name: 'CNA Bot'
+name: 'DIVD CNA Bot'
 description: 'A Bot that validates CVE records and (optionally) submits them to the CVE database.'
 author: Dutch Institute for Vulnerability Disclosure
 branding:
