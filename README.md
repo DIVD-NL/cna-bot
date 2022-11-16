@@ -166,3 +166,5 @@ If the remote record does not match the local record, create a pull reuqest to u
           pr              : ${{ github.event_name != 'pull_request' }}  # Create a PR when we push or run on schedule
           github-token:     ${{ secrets.GITHUB_TOKEN }}          
 ```
+
+Note: If you want github actions to run on pull requests created by this action you will have to use a personal Github Access token with at least the `repo`, `org:read` and `discussion:read` scopes.
