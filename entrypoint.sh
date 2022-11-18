@@ -72,12 +72,16 @@ git config --global --add safe.directory $PWD
 
 # Check the CVE records
 echo "*** Checking CVE records ***"
-/run/cve_check.py --path $CVE_PATH $IGNORE_CHECKS $MIN_RESERVED $RESERVE $RESERVATIONS_TOO $DO_RESERVATIONS --schema /run/cve50.json
+CMD="/run/cve_check.py --path $CVE_PATH $IGNORE_CHECKS $MIN_RESERVED $RESERVE $RESERVATIONS_TOO $DO_RESERVATIONS --schema /run/cve50.json"
+echo "Running: $CMD"
+$CMD
 
 if [[ "$CVE_PUBLISH" == "true" ]]; then
 	echo
 	echo "*** Publishing/updating CVE records ***"
-	/run/cve_publish_update.py --path $CVE_PATH $UPDATE_LOCAL $RESERVATIONS_TOO $DO_RESERVATIONS
+	CMD="/run/cve_publish_update.py --path $CVE_PATH $UPDATE_LOCAL $RESERVATIONS_TOO $DO_RESERVATIONS"
+	echo "Running: $CMD"
+	$CMD
 
 	if [[ "$DO_PR" == "true" ]]; then
 		# Require github_token
