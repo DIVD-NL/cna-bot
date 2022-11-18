@@ -26,8 +26,6 @@ def cve_api_login() -> CveApi:
     return cve_api
 
 def write_json_file(filename, json_data) :
-    print(file)
-    print(json_data)
     with open(filename, "w") as f:
         f.write(json.dumps(json_data, indent=2, sort_keys=True))
         f.close()
@@ -69,6 +67,7 @@ if __name__ == '__main__':
     updated=0
     created=0
     # CVE records
+    print("CVE records\n")
     for root, dirs, files in os.walk(args.path):
         if not root.startswith(args.reservations_path) :
             for file in files:
@@ -162,7 +161,7 @@ if __name__ == '__main__':
                     if file_valid and json_data["cveMetadata"]["state"] != "RESERVED" and json_data["cveMetadata"]["state"] != "PUBLISHED" :
                         print("State of {} is not 'RESERVED' or 'PUBLISHED', don't know what to do with a '{}' record. Skipping.".format(cve_id,json_data["cveMetadata"]["state"]))
 
-
+    print("\nReservations\n")
     if args.include_reservations:
         # Reservations
         cves = list(cve_api.list_cves())
