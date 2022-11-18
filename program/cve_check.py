@@ -312,10 +312,10 @@ if __name__ == '__main__':
     # CVE record checks
     for root, dirs, files in os.walk(args.path):
         # Walk all CVE records, execlude reservations
-        if not root.startswith(args.reservations_path) :
-            for file in files:
-                if file.endswith(".json"):
-                    filename = os.path.join(root,file)
+        for file in files:
+            if file.endswith(".json"):
+                filename = os.path.join(root,file)
+                if not filename.startswith(args.reservations_path) :
                     print("File: {}".format(filename))
                     try:
                         f = open(filename)
