@@ -188,6 +188,9 @@ def state_match(file,json_data,args,type) :
             if metadata["state"] == "RESERVED" :
                 # Ok
                 return True, None
+            if metadata["state"] == "REJECTED" :
+                # Ok
+                return True, None
             else :
                 return False, "This file is a reservation, but actual state is {}".format(metadata["state"])
         else:
@@ -274,9 +277,9 @@ if __name__ == '__main__':
         print("Path '{}' does not exist".format(args.path),file=sys.stderr)
         exit(255)
 
+    if args.reservations_path == "" :
+        args.reservations_path = "{}/reservations".format(args.path)
     if args.include_reservations:
-        if args.reservations_path == "" :
-            args.reservations_path = "{}/reservations".format(args.path)
         if not os.path.exists(args.reservations_path) :
             print("Reservations path '{}' does not exist".format(args.reservations_path),file=sys.stderr)
             exit(255)
