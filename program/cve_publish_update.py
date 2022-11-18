@@ -69,11 +69,11 @@ if __name__ == '__main__':
     # CVE records
     print("CVE records\n")
     for root, dirs, files in os.walk(args.path):
-        if not root.startswith(args.reservations_path) :
-            for file in files:
-                if file.endswith(".json") :
-                    # Get basic data
-                    filename = os.path.join(root,file)
+        for file in files:
+            if file.endswith(".json") :
+                # Get basic data
+                filename = os.path.join(root,file)
+                if not filename.startswith(args.reservations_path) :
                     print(filename)
                     cve_id_from_file=os.path.basename(filename).replace(".json","")
 
