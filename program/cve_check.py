@@ -64,9 +64,39 @@ def published_in_repo(args):
     else:
         return True, None
 
+def reserved_in_repo(args):
+    if args.include_reservations :
+        results = []
+        remote = {}
+        for cve in sorted(cves, key=lambda x: x["cve_id"]):
+            filename = cve["cve_id"]+".json"
+            found = False
+            if cve["state"] == "RESERVED":
+                for root, dirs, files in os.walk(args.path):
+                    if filename in files:
+                        found = True
+                        break
+                if not found :
+                    for root, dirs, files in os.walk(args.reservations_path):
+                        if filename in files:
+                            found = True
+                            break
+                if not found:
+                    results.append(
+                        "No json file found for {}, use `cve show {} --raw > {}/{}.json` to add it".format(
+                            cve["cve_id"],cve["cve_id"],args.reservations_path, cve["cve_id"])
+                        )
+        if len(results) > 0:
+            return False, "\n".join(results)
+        else:
+            return True, None
+    else:
+        return True, "N/A"
+
+
 # File based checks
 
-def file_valid_json1(file,json_data,args) :
+def file_valid_json1(file,json_data,args,type) :
     # Check if the JSON is valid ad accoording to spec
     results = []
 
@@ -77,7 +107,7 @@ def file_valid_json1(file,json_data,args) :
     except ValueError as err:
         results.append("Error loading JSON: {}".format(err))
 
-    if len(results) == 0 :
+    if len(results) == 0 and type == "cve":
         v = Draft202012Validator(json50schema)
         for validationError in sorted(v.iter_errors(json_data), key=str):
             results.append("Schema validation of CVE record failed. The reason is likely one or more of those listed below:")
@@ -92,7 +122,7 @@ def file_valid_json1(file,json_data,args) :
         return False, "\n".join(results)
 
 
-def file_name(file,json_data,args) :
+def file_name(file,json_data,args,type) :
     # Check if the file name is OK
     results = []
     basename = os.path.basename(file)
@@ -104,7 +134,10 @@ def file_name(file,json_data,args) :
     # Test ID
     try:
         cve_from_name = basename.replace(".json","")
-        cve_from_file = json_data["cveMetadata"]["cveId"]
+        if type == "cve" :
+            cve_from_file = json_data["cveMetadata"]["cveId"]
+        else:
+            cve_from_file = json_data["cve_id"]
         if cve_from_name != cve_from_file :
             results.append("CVE ID from filename ({}), doesn't match CVE ID from json ({})".format(cve_from_name, cve_from_file))
     except:
@@ -116,49 +149,71 @@ def file_name(file,json_data,args) :
     else:
         return False, "\n".join(results)
 
-def has_record(file,json_data,args) :
+def has_record(file,json_data,args,type) :
     cve_id = os.path.basename(file).replace(".json","")
     for cve in cves:
         if cve["cve_id"] == cve_id:
             return True, None
     return False, "You have not published or reserved {}".format(cve_id)
 
-def state_match(file,json_data,args) :
-    if "cveMetadata" in json_data :
-        cve_id = json_data["cveMetadata"]["cveId"]
-        metadata = { "state" : "Not ours" }
-        for cve in cves :
-            if cve["cve_id"] == cve_id :
-                metadata = cve
-                break
-        if metadata["state"] == json_data["cveMetadata"]["state"] :
-            # Ok
+def state_match(file,json_data,args,type) :
+    if type == "cve" :
+        if "cveMetadata" in json_data :
+            cve_id = json_data["cveMetadata"]["cveId"]
+            metadata = { "state" : "Not ours" }
+            for cve in cves :
+                if cve["cve_id"] == cve_id :
+                    metadata = cve
+                    break
+            if metadata["state"] == json_data["cveMetadata"]["state"] :
+                # Ok
+                return True, None
+            if json_data["cveMetadata"]["state"] == "REJECTED"  :
+                return False, "State mismatch: local is 'REJECTED' but remote is '{}'".format(metadata["state"])
+            if json_data["cveMetadata"]["state"] == "PUBLISHED" and metadata["state"] == "REJECTED" :
+                return False, "State mismatch: local is 'REJECTED' but remote is '{}'".format(metadata["state"])
+            if json_data["cveMetadata"]["state"] == "RESERVED" :
+                return False, "State mismatch: local is 'REJECTED' but remote is '{}'".format(metadata["state"])
             return True, None
-        if json_data["cveMetadata"]["state"] == "REJECTED"  :
-            return False, "State mismatch: local is 'REJECTED' but remote is '{}'".format(metadata["state"])
-        if json_data["cveMetadata"]["state"] == "PUBLISHED" and metadata["state"] == "REJECTED" :
-            return False, "State mismatch: local is 'REJECTED' but remote is '{}'".format(metadata["state"])
-        if json_data["cveMetadata"]["state"] == "RESERVED" :
-            return False, "State mismatch: local is 'REJECTED' but remote is '{}'".format(metadata["state"])
-        return True, None
-    else:
-        return False, "JSON invalid"
+        else:
+            return False, "JSON invalid"
+    else :
+        if "cve_id" in json_data :
+            cve_id = json_data["cve_id"]
+            metadata = { "state" : "Not ours" }
+            for cve in cves :
+                if cve["cve_id"] == cve_id :
+                    metadata = cve
+                    break
+            if metadata["state"] == "RESERVED" :
+                # Ok
+                return True, None
+            else :
+                return False, "This file is a reservation, but actual state is {}".format(metadata["state"])
+        else:
+            return False, "JSON invalid"
 
-def publisher_match(file,json_data,args) :
-    if "cveMetadata" in json_data :
-        cve_id = json_data["cveMetadata"]["cveId"]
-        metadata = cve_api.show_cve_id(cve_id)
+def publisher_match(file,json_data,args,type) :
+    cve_id = os.path.basename(file).replace(".json","")
+    metadata = cve_api.show_cve_id(cve_id)
+    if metadata :
         if metadata["owning_cna"] != org["short_name"] :
             return False, "Owner mismatch: remote is owned by '{}' but we are '{}'".format(metadata["owning_cna"],org["short_name"])
         return True, None
-    else:
-        return False, "JSON invalid"
+    else :
+        return False, "We don't own {}".format(cve_id)
 
 # Checks object and global variables
+# Supported types are:
+# gen  - generic check, not a per file check
+# file - check that applies to any json file
+# cve  - check that applies to a cve record file (not in reservations_path)
+# res  - check that applies to a reservation record (in reservations_path)
 
 checks = {
     "min_reserved"      : { "type": "gen",  "func": minimum_reserved,  "description" : "Check if we have am minimum number of reserved entries" },
-    "published_in_path" : { "type": "gen",  "func": published_in_repo, "description" : "Check if all published CVE records are in the path"},
+    "publ_in_path"      : { "type": "gen",  "func": published_in_repo, "description" : "Check if all published CVE records are in the path"},
+    "reserve_in_path"   : { "type": "gen",  "func": reserved_in_repo,  "description" : "Check if all reserved CVE records are in the (reserved) path"},
     "json_valid"        : { "type": "file", "func": file_valid_json1,  "description" : "Check if the file name/location is valid" },
     "filename"          : { "type": "file", "func": file_name,         "description" : "Check if a file is valid JSON" },
     "has_record"        : { "type": "file", "func": has_record,        "description" : "Check if a CVE ID is reserved or published for this CVE record" },
@@ -193,9 +248,11 @@ if __name__ == '__main__':
     parser.add_argument('--min-reserved', type=int, metavar="N", default=0, help="Minimum number of reserved IDs for the current year" )
     parser.add_argument('--reserve', type=int, metavar="N", default=0, help="Reserve N new entries if reserved for this year is below minimum")
     parser.add_argument('--schema', type=str, metavar="./cve50.json", default="./cve50.json", help="Path to the CVE json50 schema file")
-
+    parser.add_argument('--include-reservations', action="store_true", default=False, help="Include reservations in our records")
+    parser.add_argument('--reservations-path', type=str, metavar="./reservations", default="", help="path of directory for reservations")
 
     args = parser.parse_args()
+
 
     if args.list > 0 :
         print("The following checks are available:")
@@ -213,6 +270,17 @@ if __name__ == '__main__':
         print("Schema file does not exist",file=sys.stderr)
         exit(255)
 
+    if not os.path.exists(args.path) :
+        print("Path '{}' does not exist".format(args.path),file=sys.stderr)
+        exit(255)
+
+    if args.include_reservations:
+        if args.reservations_path == "" :
+            args.reservations_path = "{}/reservations".format(args.path)
+        if not os.path.exists(args.reservations_path) :
+            print("Reservations path '{}' does not exist".format(args.reservations_path),file=sys.stderr)
+            exit(255)
+
     # Is CVE lib installed
     cve_api = cve_api_login()
     try:
@@ -224,18 +292,51 @@ if __name__ == '__main__':
 
     check_pass = True
     for id in checks:
-        if id not in skips and checks[id]["type"] != "file":
+        if checks[id]["type"] == "gen":
             print("{:15s}...".format(id),end='')
-            passed, result = checks[id]["func"](args)
-            if passed :
-                print("PASS")
-                if(result):
-                    print(result)
+            if id not in skips :
+                passed, result = checks[id]["func"](args)
+                if passed :
+                    print("PASS")
+                    if(result):
+                        print(result)
+                else:
+                    print("FAIL\n{}".format(result))
+                    check_pass = False
             else:
-                print("FAIL\n{}".format(result))
-                check_pass = False
-            print()
+                print("SKIP")
+    print()
+    # CVE record checks
     for root, dirs, files in os.walk(args.path):
+        # Walk all CVE records, execlude reservations
+        if not root.startswith(args.reservations_path) :
+            for file in files:
+                if file.endswith(".json"):
+                    filename = os.path.join(root,file)
+                    print("File: {}".format(filename))
+                    try:
+                        f = open(filename)
+                        json_data = json.load(f)
+                        f.close()
+                    except:
+                        json_data={}
+                    for id in checks:
+                        if ( checks[id]["type"] == "file" or checks[id]["type"] == "cve" ) :
+                            print("{:15s}...".format(id),end='')
+                            if id not in skips :
+                                passed, result = checks[id]["func"](filename,json_data,args,"cve")
+                                if passed :
+                                    print("PASS")
+                                    if(result):
+                                        print(result)
+                                else:
+                                    check_pass = False
+                                    print("FAIL\n{}".format(result))
+                            else:
+                                print("SKIP")
+                    print()
+    # Reservation checks
+    for root, dirs, files in os.walk(args.reservations_path):
         for file in files:
             if file.endswith(".json"):
                 filename = os.path.join(root,file)
@@ -247,16 +348,19 @@ if __name__ == '__main__':
                 except:
                     json_data={}
                 for id in checks:
-                    if id not in skips and checks[id]["type"] == "file":
+                    if ( checks[id]["type"] == "file" or checks[id]["type"] == "res" ) :
                         print("{:15s}...".format(id),end='')
-                        passed, result = checks[id]["func"](filename,json_data,args)
-                        if passed :
-                            print("PASS")
-                            if(result):
-                                print(result)
+                        if id not in skips :
+                            passed, result = checks[id]["func"](filename,json_data,args,"res")
+                            if passed :
+                                print("PASS")
+                                if(result):
+                                    print(result)
+                            else:
+                                check_pass = False
+                                print("FAIL\n{}".format(result))
                         else:
-                            check_pass = False
-                            print("FAIL\n{}".format(result))
+                            print("SKIP")
                 print()
     if check_pass == True:
         exit(0)

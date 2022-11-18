@@ -45,22 +45,29 @@ inputs:
   github-pr-description:
     description: 'description of the github pull request. Defaults to `Automatic updates made by cve-rsus-validate-submit Github Action`'
     default: 'Automatic updates made by cve-rsus-validate-submit Github Action'
+  check-reservations:
+    description: 'Check reservations as well (default: true)'
+    default: true
+  reservations-path:
+    description: 'Path where reservations are kept by default. (default: $path/reservations'
+    default: ''
 
 runs:
   using: 'docker'
   image: 'Dockerfile'
-  args:
-    - ${{ inputs.path }}
-    - ${{ inputs.publish }}
-    - ${{ inputs.ignore }}
-    - ${{ inputs.min-reserved }}
-    - ${{ inputs.reserve }}
-    - ${{ inputs.pr }}
   env:
-    CVE_USER :        ${{ inputs.cve-user }}
-    CVE_ORG :         ${{ inputs.cve-org }}
-    CVE_API_KEY :     ${{ inputs.cve-api-key }}
-    CVE_ENVIRONMENT : ${{ inputs.cve-environment }}
-    GITHUB_TOKEN :    ${{ inputs.github-token }}
-    GITHUB_BRANCH :   ${{ inputs.github-branch }}
-    GITHUB_PR_DESC :  ${{ inputs.github-pr-description }}
+    CVE_USER :              ${{ inputs.cve-user }}
+    CVE_ORG :               ${{ inputs.cve-org }}
+    CVE_API_KEY :           ${{ inputs.cve-api-key }}
+    CVE_ENVIRONMENT :       ${{ inputs.cve-environment }}
+    GITHUB_TOKEN :          ${{ inputs.github-token }}
+    GITHUB_BRANCH :         ${{ inputs.github-branch }}
+    GITHUB_PR_DESC :        ${{ inputs.github-pr-description }}
+    CVE_PATH :              ${{ inputs.path }}
+    CVE_PUBLISH :           ${{ inputs.publish }}
+    IGNORE_CHECKS :         ${{ inputs.ignore }}
+    MIN_RESERVED :          ${{ inputs.min-reserved }}
+    RESERVE :               ${{ inputs.reserve }}
+    DO_PR :                 ${{ inputs.pr }}
+    INCLUDE_RESERVATIONS :  ${{ inputs.check-reservations }}
+    RESERVATIONS-PATH :     ${{ inputs.reservations-path }}
