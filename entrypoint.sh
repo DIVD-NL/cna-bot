@@ -1,28 +1,64 @@
 #!/bin/sh 
-#  args:
-#    - ${{ inputs.path }}
-#    - ${{ inputs.publish }}
-#    - ${{ inputs.ignore }}
-#    - ${{ inputs.min-reserved }}
-#    - ${{ inputs.reserve }}
-#    - ${{ inputs.pr }}
+#  env:
+#    CVE_USER :              ${{ inputs.cve-user }}
+#    CVE_ORG :               ${{ inputs.cve-org }}
+#    CVE_API_KEY :           ${{ inputs.cve-api-key }}
+#    CVE_ENVIRONMENT :       ${{ inputs.cve-environment }}
+#    GITHUB_TOKEN :          ${{ inputs.github-token }}
+#    GITHUB_BRANCH :         ${{ inputs.github-branch }}
+#    GITHUB_PR_DESC :        ${{ inputs.github-pr-description }}
+#    CVE_PATH :              ${{ inputs.path }}
+#    CVE_PUBLISH :           ${{ inputs.publish }}
+#    IGNORE_CHECKS :         ${{ inputs.ignore }}
+#    MIN_RESERVED :          ${{ inputs.min-reserved }}
+#    RESERVE :     		     ${{ inputs.reserve }}
+#    DO_PR :                 ${{ inputs.pr }}
+#    INCLUDE_RESERVATIONS :  ${{ inputs.check-reservations }}
+#    RESERVATIONS-PATH :     ${{ inputs.reservations-path }}
 
 # Fail if we encounter an error
 set -e
 
-# Process command line arguments
-if [[ "$3" != "" ]]; then
-	SKIP="--skip $3"
-fi
-if [[ "$4" != "" ]]; then
-	RESERVED="--min-reserved $4"
-fi
-if [[ "$5" != "" ]]; then
-	RESERVE="--reserve $5"
+# Process env variables
+if [[ $( echo $CVE_PATH | egrep "^\/" | wc -l ) -gt 0 ]] ; then
+	echo "CVE_PATH should be a relative path, '$CVE_PATH' isn't, bailing out..."
+	exit 1
 fi
 
-if [[ "$6" == "true" ]]; then
+if [[ ! -d $CVE_PATH ]]; then
+	echo "CVE_PATH '$CVE_PATH' is not a directory, bailing out..."
+	exit 1
+fi
+
+if [[ "$IGNORE_CHECKS" != "" ]]; then
+	IGNORE_CHECKS="--skip $IGNORE_CHECKS"
+fi
+if [[ "$MIN_RESERVED" != "" ]]; then
+	MIN_RESERVED="--min-reserved $MIN_RESERVED"
+fi
+if [[ "$RESERVE" != "" ]]; then
+	RESERVE="--reserve $RESERVE"
+fi
+
+if [[ "$DO_PR" == "true" ]]; then
 	UPDATE_LOCAL="--update-local"
+fi
+
+if [[ -z "$RESERVATIONS_PATH" ]]; then
+	RESERVATIONS_PATH="$CVE_PATH/reservations/"
+fi
+
+if [[ "$INCLUDE_RESERVATIONS" == true ]]; then
+	RESERVATIONS_TOO="--include-reservations"
+	DO_RESERVATIONS="--reservations-path $RESERVATIONS_PATH"
+fi
+
+if [[ $INCLUDE_RESERVATIONS == "true" && ! -d $RESERVATIONS_PATH ]]; then
+	mkdir $RESERVATIONS_PATH
+fi
+if [[ $( echo $RESERVATIONS_PATH | egrep "^\/" | wc -l ) -gt 0 ]] ; then
+	echo "RESERVATIONS_PATH should be a relative path, '$RESERVATIONS_PATH' isn't, bailing out..."
+	exit 1
 fi
 
 # Check if we have CVE Services credentials
@@ -36,14 +72,14 @@ git config --global --add safe.directory $PWD
 
 # Check the CVE records
 echo "*** Checking CVE records ***"
-/run/cve_check.py --path $1 $SKIP $RESERVED $RESERVE --schema /run/cve50.json
+/run/cve_check.py --path $CVE_PATH $IGNORE_CHECKS $MIN_RESERVED $RESERVE $RESERVATIONS_TOO $DO_RESERVATIONS --schema /run/cve50.json
 
-if [[ "$2" == "true" ]]; then
+if [[ "$CVE_PUBLISH" == "true" ]]; then
 	echo
 	echo "*** Publishing/updating CVE records ***"
-	/run/cve_publish_update.py --path $1 $UPDATE_LOCAL
+	/run/cve_publish_update.py --path $CVE_PATH $UPDATE_LOCAL $RESERVATIONS_TOO $DO_RESERVATIONS
 
-	if [[ "$6" == "true" ]]; then
+	if [[ "$DO_PR" == "true" ]]; then
 		# Require github_token
 		if [[ -z "${GITHUB_TOKEN}" ]]; then
 		  MESSAGE='Missing input "github_token: ${{ secrets.GITHUB_TOKEN }}".'
@@ -81,14 +117,36 @@ if [[ "$2" == "true" ]]; then
 			else
 				git checkout -b $GITHUB_BRANCH
 			fi
-			cp -r ../$1/* $1/
+
+			# Copy updated directories
+			cp -r ../$CVE_PATH/* $CVE_PATH/
+			if [[ "$INCLUDE_RESERVATIONS" ]] ; then
+				if [[ $( ls $RESERVATIONS_PATH | wc -l  ) -gt 0 ]]; then
+					cp -r ../$RESERVATIONS_PATH/* $RESERVATIONS_PATH
+				fi
+			fi
 
 			if [[ $( git status | grep "working tree clean" | wc -l ) -gt 0 ]]; then
 				echo "Nothing to commit, cowardly bailing out"
 				exit 0
 			fi
 			echo -e "\nCommiting changes to branch and creating pull request..."
-			git commit -am "Updating records to match remote records"
+
+			# Add CVE records
+			git add $CVE_PATH
+			# Unstage reservations if they happend to be in $CVE_PATH
+			git restore --staged $RESERVATIONS_PATH
+
+			# Add reservations
+			if [[ "$INCLUDE_RESERVATIONS" ]] ; then
+				git add $RESERVATIONS_PATH
+			fi
+
+			if [[ "$INCLUDE_RESERVATIONS" ]] ; then
+				git commit -m "Updating records to match remote records and reservations"
+			else
+				git commit -m "Updating records to match remote records"
+			fi
 			git push --set-upstream origin $GITHUB_BRANCH
 			if [[ $( gh pr view $GITHUB_BRANCH | grep "no pull requests found" | wc -l ) -gt 0 ]]; then
 				echo "A pull request for $GITHUB_BRANCH already exists"

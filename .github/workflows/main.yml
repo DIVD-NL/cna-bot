@@ -18,6 +18,6 @@ jobs:
           cve-environment:  test
           path:             test-cves
           publish:          ${{ github.ref == 'refs/heads/main' }}
-          ignore:           published_in_path
+          ignore:           publ_in_path,reserve_in_path
           pr:               ${{ github.ref == 'refs/heads/main' }}
           github-token:     ${{ secrets.GITHUB_TOKEN }}
