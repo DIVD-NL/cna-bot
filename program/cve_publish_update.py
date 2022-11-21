@@ -199,7 +199,7 @@ if __name__ == '__main__':
         # We did not expire CVE IDs, yet.
         expired = 0
 
-        # reservations.locl files
+        # reservations.lock files
         locked = []
         for root, dirs, files in os.walk(args.reservations_path):
             for file in files:
