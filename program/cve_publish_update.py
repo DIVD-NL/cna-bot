@@ -77,7 +77,7 @@ if __name__ == '__main__':
                     past_date = datetime.today() - relativedelta(years=int(result.group(1)))
             expire_year = past_date.year - 1
         else :
-            print("--expire-after is set to '{}', but is shoiuld be a number and a period specifier\nE.g. 1d = 1 day, 2w = 2 weeks, 3m = 3 months or 4y = 4 years".format(args.expire_after),file=sys.stderr)
+            print("--expire-after is set to '{}', but is should be a number and a period specifier\nE.g. 1d = 1 day, 2w = 2 weeks, 3m = 3 months or 4y = 4 years".format(args.expire_after),file=sys.stderr)
             exit(255)
 
 
