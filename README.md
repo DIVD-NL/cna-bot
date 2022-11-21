@@ -27,7 +27,7 @@ Set to `true` to publish the records to the CVE services (defaults to false)
 
 ## `path`
 
-Path to find CVE records in. Any \*.json file in this riectory is considered a CVE record (defaults to `.`)
+Path to find CVE records in. Any \*.json file in this directory is considered a CVE record (defaults to `.`)
 
 ## `ignore`
 
