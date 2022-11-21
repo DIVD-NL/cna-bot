@@ -166,7 +166,7 @@ if [[ "$CVE_PUBLISH" == "true" ]]; then
 					BODY="
 $BODY
 
-I autmatically expired some reservations for you. If you don't want that to happend, create an \`reservations.lock\` file anywhere in the reservations directory and add the CVE ID of reservations you don't want me to expire to it. You can use \# style comments in this file.
+I automatically expired some reservations for you. If you don't want that to happend, create an \`reservations.lock\` file anywhere in the reservations directory and add the CVE ID of reservations you don't want me to expire to it. You can use \# style comments in this file.
 "
 				fi
 				gh pr create --title "$GITHUB_PR_DESC" --body "$BODY"
