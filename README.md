@@ -29,6 +29,10 @@ Set to `true` to publish the records to the CVE services (defaults to false)
 
 Path to find CVE records in. Any \*.json file in this riectory is considered a CVE record (defaults to `.`)
 
+## `reservations-path`
+
+Path to find CVE ID reservations in. Any \*.json file in this riectory is considered a CVE ID reservation (defaults to `<path>/reservations`)
+
 ## `ignore`
 
 Comma separted list of checks to ignore.
@@ -46,6 +50,22 @@ Minimum number of records to reserve in one go (0=do not make reservations)
 ## `pr`
 
 Create a pull request to bring local records in line with remote records (defaults to `false`)
+
+## `github-token`
+
+A github token to be used by this action. Default ` `. Recommended value: ${{ secrets.GITHUB_TOKEN }}
+
+If you want github actions to run on pull requests created by this action you will have to use a personal Github Access token with at least the `repo`, `org:read` and `discussion:read` scopes.
+
+## `expire-after`
+
+Create pull request (if `pr` is set to `true`) to expire reservations this much time after the end of the year.
+Example values are:
+* `4d` for 4 days, reservations will expire on or after 5 Jan
+* `3w` for 4 weeks, reservations will expire on or after 15 Jan
+* `2m` for 2 months, reservations will expire on or after 1 Mar
+* `1y` for 1 year, reserveration will expire on or after 1 Jan for reservations before the previous year
+
 
 ## Example usage
 
@@ -82,15 +102,39 @@ jobs:
           cve-api-key     : ${{ secrets.CVE_API_KEY }}
           cve-environment : test                                        # Change to prod for actual use
           publish         : ${{ github.ref == 'refs/heads/main' }}      # Only publish when we merge into the main branch
-          path            : records/                                    # This is where the CVE records live
+          path            : records                                     # This is where the CVE records live
+          path            : records/reservations                        # This is where reservation CVE IDs live
           ignore          : ""                                          # Don't ignore any checks
           min-reserved    : 10                                          # Keep at least 10 reserved records (for the current year)
           reserve         : 10                                          # Reserve a minimum of 10 records at a time 
           pr              : ${{ github.event_name != 'pull_request' }}  # Create a PR when we push or run on schedule
-          github-token:     ${{ secrets.GITHUB_TOKEN }}          
+          github-token    : ${{ secrets.GITHUB_TOKEN }}          
+          expire-after    : "1y"
+
 ```
 
-I will explain each part of the workflow
+## reservations.lock
+
+You can create a this file to exclude CVE ID reservations from automatic expiry. You can create one or more of these files anywhere in the `reservations-path`. You must include one CVE ID per line and `#` style comments are allowed.
+
+You can also use this file for some local administration.
+
+E.g.
+```
+# reservations.lock
+
+# DIVD-2010-00001
+# Owner: Frank
+CVE-2010-66666  # Ticket: 1245
+CVE-2010-66667  # Ticket: 1246
+
+# DIVD-2010-00002
+CVE-2010-66668  # Ticket: 1249
+CVE-2010-66669  # Ticket: 1250
+```
+
+## Detailed explanation
+I will explain each part of the workflow, in detail
 
 
 We will run this workflow on pull requests agains main and on pushes to the main branch and run at 4:05 at night.
@@ -168,3 +212,8 @@ If the remote record does not match the local record, create a pull reuqest to u
 ```
 
 Note: If you want github actions to run on pull requests created by this action you will have to use a personal Github Access token with at least the `repo`, `org:read` and `discussion:read` scopes.
+
+```
+          expire-after    : "1y"
+```
+If we have reservations of 1 year before last year, in the state `RESERVED`, then automatically create a pull-request to set them to `REJECTED`.
