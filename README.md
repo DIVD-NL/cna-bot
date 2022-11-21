@@ -31,7 +31,7 @@ Path to find CVE records in. Any \*.json file in this riectory is considered a C
 
 ## `reservations-path`
 
-Path to find CVE ID reservations in. Any \*.json file in this riectory is considered a CVE ID reservation (defaults to `<path>/reservations`)
+Path to find CVE ID reservations in. Any \*.json file in this directory is considered a CVE ID reservation (defaults to `<path>/reservations`)
 
 ## `ignore`
 
