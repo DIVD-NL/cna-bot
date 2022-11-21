@@ -161,7 +161,7 @@ if [[ "$CVE_PUBLISH" == "true" ]]; then
 			if [[ $( gh pr view $GITHUB_BRANCH | grep "no pull requests found" | wc -l ) -gt 0 ]]; then
 				echo "A pull request for $GITHUB_BRANCH already exists"
 			else
-				BODY="Autmatic PR by https://github.com/DIVD-NL/cve-rsus-validate-submit"
+				BODY="Automatic PR by https://github.com/DIVD-NL/cna-bot"
 				if [[ $(grep "updated to expire reservation." /tmp/publish.log | wc -l ) -gt 0 ]]; then
 					BODY="
 $BODY
