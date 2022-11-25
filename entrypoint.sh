@@ -78,8 +78,8 @@ CMD="/run/cve_check.py --path $CVE_PATH $IGNORE_CHECKS $MIN_RESERVED $RESERVE $R
 echo "Running: $CMD"
 $CMD || echo "Check failed!"
 
-if [[ $( cat /tmp/cve_check.log | wc -l ) -gt 0 ]] ; then
 	if [[ ! -z "${GITHUB_TOKEN}" ]]; then
+	if [[ $( cat /tmp/cve_check.log | wc -l ) -gt 0 ]] ; then
 		if [[ $( gh pr view --json author --jq .author.login ) != ${GITHUB_ACTOR} ]]; then
 			REVIEW="review -r"
 		else
@@ -90,8 +90,10 @@ if [[ $( cat /tmp/cve_check.log | wc -l ) -gt 0 ]] ; then
 			echo
 			cat /tmp/cve_check.log
 		) | gh pr $REVIEW -F -
+		exit 1
+	else
+		gh pr comment -b "No problems detected"
 	fi
-	exit 1
 fi
 
 
