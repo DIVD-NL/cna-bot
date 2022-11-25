@@ -75,12 +75,16 @@ echo "*** Checking CVE records ***"
 rm -f /tmp/cve_check.log
 CMD="/run/cve_check.py --path $CVE_PATH $IGNORE_CHECKS $MIN_RESERVED $RESERVE $RESERVATIONS_TOO $DO_RESERVATIONS --schema /run/cve50.json --log /tmp/cve_check.log"
 echo "Running: $CMD"
-$CMD
+(
+	set +e
+	$CMD
+)
 
 if [[ $( wc -l /tmp/cve_check.log ) -gt 0 ]] ;
 	if [[ ! -z "${GITHUB_TOKEN}" ]]; then
 		gh pr comment ${GITHUB_BRANCH} -F /tmp/cve_check.log
 	fi
+	exit 1
 fi
 
 
