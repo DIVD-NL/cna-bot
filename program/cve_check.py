@@ -349,8 +349,8 @@ if __name__ == '__main__':
                                 print("SKIP")
                     print()
     # Reservation checks
-    for root, dirs, files in os.walk(args.reservations_path):
-        for file in files:
+    for root, dirs, files in sorted(os.walk(args.reservations_path)):
+        for file in sorted(files):
             if file.endswith(".json"):
                 filename = os.path.join(root,file)
                 print("File: {}".format(filename))

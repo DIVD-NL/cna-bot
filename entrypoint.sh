@@ -80,11 +80,16 @@ $CMD || echo "Check failed!"
 
 if [[ $( cat /tmp/cve_check.log | wc -l ) -gt 0 ]] ; then
 	if [[ ! -z "${GITHUB_TOKEN}" ]]; then
+		if [[ $( gh pr view --json author --jq .author.login ) != ${GITHUB_ACTOR} ]]; then
+			REVIEW="review -r"
+		else
+			REVIEW="comment"
+		fi
 		(
 			echo CNA-Bot detected errors in your PR:
 			echo
 			cat /tmp/cve_check.log
-		) | gh pr comment review -r -F -
+		) | gh pr $REVIEW -F -
 	fi
 	exit 1
 fi
