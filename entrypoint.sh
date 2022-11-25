@@ -80,7 +80,7 @@ $CMD || echo "Check failed!"
 
 if [[ $( cat /tmp/cve_check.log | wc -l ) -gt 0 ]] ; then
 	if [[ ! -z "${GITHUB_TOKEN}" ]]; then
-		gh pr comment ${GITHUB_BRANCH} -F /tmp/cve_check.log
+		gh pr comment -b "cna-bot detected soem errors!" -F /tmp/cve_check.log
 	fi
 	exit 1
 fi
