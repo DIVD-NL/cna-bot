@@ -117,7 +117,7 @@ def file_valid_json1(file,json_data,args,type) :
 
     # return results
     if len(results) == 0:
-        return False, "File is valid"
+        return True, None
     else:
         return False, "\n".join(results)
 
