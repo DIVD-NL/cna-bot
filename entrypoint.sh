@@ -20,7 +20,6 @@
 
 # Fail if we encounter an error
 set -e
-set -x
 
 # Process env variables
 if [[ $( echo $CVE_PATH | egrep "^\/" | wc -l ) -gt 0 ]] ; then
