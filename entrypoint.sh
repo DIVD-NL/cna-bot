@@ -72,9 +72,17 @@ git config --global --add safe.directory $PWD
 
 # Check the CVE records
 echo "*** Checking CVE records ***"
-CMD="/run/cve_check.py --path $CVE_PATH $IGNORE_CHECKS $MIN_RESERVED $RESERVE $RESERVATIONS_TOO $DO_RESERVATIONS --schema /run/cve50.json"
+rm /tmp/cve_check.log
+CMD="/run/cve_check.py --path $CVE_PATH $IGNORE_CHECKS $MIN_RESERVED $RESERVE $RESERVATIONS_TOO $DO_RESERVATIONS --schema /run/cve50.json --log /tmp/cve_check.log"
 echo "Running: $CMD"
 $CMD
+
+if [[ $( wc -l /tmp/cve_check.log ) -gt 0 ]] ;
+	if [[ ! -z "${GITHUB_TOKEN}" ]]; then
+		gh pr comment ${GITHUB_BRANCH} -F /tmp/cve_check.log
+	fi
+fi
+
 
 if [[ "$CVE_PUBLISH" == "true" ]]; then
 	echo

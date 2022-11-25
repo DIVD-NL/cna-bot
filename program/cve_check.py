@@ -117,7 +117,7 @@ def file_valid_json1(file,json_data,args,type) :
 
     # return results
     if len(results) == 0:
-        return True, None
+        return False, "File is valid"
     else:
         return False, "\n".join(results)
 
@@ -241,6 +241,13 @@ def cve_api_login() -> CveApi:
     )
     return cve_api
 
+def log(result, file, logfile) :
+    if logfile :
+        with open(logfile, "a") as lfh:
+            if file :
+                lfh.write("In file {} :\n".format(file))
+            lfh.write("{}\n".format(result))
+
 # Main
 
 if __name__ == '__main__':
@@ -253,6 +260,7 @@ if __name__ == '__main__':
     parser.add_argument('--schema', type=str, metavar="./cve50.json", default="./cve50.json", help="Path to the CVE json50 schema file")
     parser.add_argument('--include-reservations', action="store_true", default=False, help="Include reservations in our records")
     parser.add_argument('--reservations-path', type=str, metavar="./reservations", default="", help="path of directory for reservations")
+    parser.add_argument('--log', type=str, metavar="/tmp/cve_check.log", default="", help="Log errors to this file")
 
     args = parser.parse_args()
 
@@ -305,14 +313,15 @@ if __name__ == '__main__':
                         print(result)
                 else:
                     print("FAIL\n{}".format(result))
+                    log(result,None,args.log)
                     check_pass = False
             else:
                 print("SKIP")
     print()
     # CVE record checks
-    for root, dirs, files in os.walk(args.path):
+    for root, dirs, files in sorted(os.walk(args.path)):
         # Walk all CVE records, execlude reservations
-        for file in files:
+        for file in sorted(files):
             if file.endswith(".json"):
                 filename = os.path.join(root,file)
                 if not filename.startswith(args.reservations_path) :
@@ -334,6 +343,7 @@ if __name__ == '__main__':
                                         print(result)
                                 else:
                                     check_pass = False
+                                    log(result,filename,args.log)
                                     print("FAIL\n{}".format(result))
                             else:
                                 print("SKIP")
@@ -362,6 +372,7 @@ if __name__ == '__main__':
                             else:
                                 check_pass = False
                                 print("FAIL\n{}".format(result))
+                                log(result,filename,args.log)
                         else:
                             print("SKIP")
                 print()
