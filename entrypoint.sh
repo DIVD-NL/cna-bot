@@ -84,7 +84,7 @@ $CMD || echo "Check failed!"
 
 if [[ ! -z "${GITHUB_TOKEN}" ]]; then
 	if [[ $( cat /tmp/cve_check.log | wc -l ) -gt 0 ]] ; then
-		if [[ $( gh pr view --json author --jq .author.login ) != ${GITHUB_ACTOR} ]]; then
+		if [[ "$( gh pr view --json author --jq .author.login )" != "${GITHUB_ACTOR}" ]]; then
 			REVIEW="review -r"
 		else
 			REVIEW="comment"
