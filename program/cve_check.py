@@ -206,6 +206,16 @@ def publisher_match(file,json_data,args,type) :
     else :
         return False, "We don't own {}".format(cve_id)
 
+def duplicate_check(file,json_data,args,type) :
+    global cve2file
+    cve_id = os.path.basename(file).replace(".json","")
+    if cve_id in cve2file :
+        return False, "There when checking {} we found that file {} also exists for {}".format(file, cve2file[cve_id], cve_id)
+    else:
+        cve2file[cve_id] = file
+    return True, None
+
+
 # Checks object and global variables
 # Supported types are:
 # gen  - generic check, not a per file check
@@ -222,9 +232,11 @@ checks = {
     "has_record"        : { "type": "file", "func": has_record,        "description" : "Check if a CVE ID is reserved or published for this CVE record" },
     "state_match"       : { "type": "file", "func": state_match,       "description" : "Check if local and remote CVE record is consistent" },
     "publisher_match"   : { "type": "file", "func": publisher_match,   "description" : "Check if CVE record is owned by us" },
+    "duplicate"         : { "type": "file", "func": duplicate_check,   "description" : "Check if you have only one file for each CVE" },
 }
 
 cves = []
+cve2file = {}
 
 # Helper functions
 
