@@ -14,7 +14,9 @@
 #    RESERVE :     		     ${{ inputs.reserve }}
 #    DO_PR :                 ${{ inputs.pr }}
 #    INCLUDE_RESERVATIONS :  ${{ inputs.check-reservations }}
-#    RESERVATIONS-PATH :     ${{ inputs.reservations-path }}
+#    RESERVATIONS_PATH :     ${{ inputs.reservations-path }}
+#    EXPIRE_AFTER :          ${{ inputs.expire-after }}
+
 
 # Fail if we encounter an error
 set -e
@@ -61,9 +63,12 @@ if [[ $( echo $RESERVATIONS_PATH | egrep "^\/" | wc -l ) -gt 0 ]] ; then
 	echo "RESERVATIONS_PATH should be a relative path, '$RESERVATIONS_PATH' isn't, bailing out..."
 	exit 1
 fi
+if [[ ! -z "$EXPIRE_AFTER" ]]; then
+	EXPIRE="--expire-after $EXPIRE_AFTER"
+fi
 
 # Check if we have CVE Services credentials
-if [[ "$CVE_USER" = "" || "$CVE_ORG" == "" || "$CVE_API_KEY" = "" || "$CVE_ENVIRONMENT" == "" ]] ; then
+if [[ "$CVE_USER" == "" || "$CVE_ORG" == "" || "$CVE_API_KEY" == "" || "$CVE_ENVIRONMENT" == "" ]] ; then
 	echo "Authentication variables for cvelib are not set."
 	exit 1
 fi
@@ -100,9 +105,9 @@ fi
 if [[ "$CVE_PUBLISH" == "true" ]]; then
 	echo
 	echo "*** Publishing/updating CVE records ***"
-	CMD="/run/cve_publish_update.py --path $CVE_PATH $UPDATE_LOCAL $RESERVATIONS_TOO $DO_RESERVATIONS"
+	CMD="/run/cve_publish_update.py --path $CVE_PATH $UPDATE_LOCAL $RESERVATIONS_TOO $DO_RESERVATIONS $EXPIRE"
 	echo "Running: $CMD"
-	$CMD
+	$CMD | tee /tmp/publish.log
 
 	if [[ "$DO_PR" == "true" ]]; then
 		# Require github_token
@@ -176,7 +181,15 @@ if [[ "$CVE_PUBLISH" == "true" ]]; then
 			if [[ $( gh pr view $GITHUB_BRANCH | grep "no pull requests found" | wc -l ) -gt 0 ]]; then
 				echo "A pull request for $GITHUB_BRANCH already exists"
 			else
-				gh pr create --title "$GITHUB_PR_DESC" --body "Autmatic PR by https://github.com/DIVD-NL/cve-rsus-validate-submit"
+				BODY="Automatic PR by https://github.com/DIVD-NL/cna-bot"
+				if [[ $(grep "updated to expire reservation." /tmp/publish.log | wc -l ) -gt 0 ]]; then
+					BODY="
+$BODY
+
+I automatically expired some reservations for you. If you don't want that to happend, create an \`reservations.lock\` file anywhere in the reservations directory and add the CVE ID of reservations you don't want me to expire to it. You can use \# style comments in this file.
+"
+				fi
+				gh pr create --title "$GITHUB_PR_DESC" --body "$BODY"
 			fi
 			cd ..
 			rm -rf new_repo

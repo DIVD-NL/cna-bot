@@ -5,9 +5,12 @@ import os
 import json
 import time
 import sys
+import re
 from deepdiff import DeepDiff
 from dateutil.parser import parse
 from cvelib.cve_api import CveApi
+from dateutil.relativedelta import relativedelta
+from datetime import datetime
 
 # Helper functions
 
@@ -43,6 +46,7 @@ if __name__ == '__main__':
     parser.add_argument('--update-local', action="store_true", default=False, help="Update local records if they differ from remote records (e.g. in metadata)")
     parser.add_argument('--include-reservations', action="store_true", default=False, help="Include reservations")
     parser.add_argument('--reservations-path', type=str, metavar=".", default="", help="path of directory to check")
+    parser.add_argument('--expire-after', type=str, metavar="3M", default="", help="Expire reservations time much after the year has expired via a pull-request, date can be specified as w.g. 30d, 3w, 2m or 1y (default: don't expire)")
 
     args = parser.parse_args()
 
@@ -56,6 +60,26 @@ if __name__ == '__main__':
         if not os.path.exists(args.reservations_path) :
             print("Reservations path '{}' does not exist".format(args.reservations_path),file=sys.stderr)
             exit(255)
+
+    expire_year=None
+    if args.expire_after :
+        result = re.search(r"^(\d+)(d|w|m|y)$", args.expire_after)
+        if result :
+            past_date = datetime.today()
+            match result.group(2) :
+                case "d" :
+                    past_date = datetime.today() - relativedelta(days=int(result.group(1)))
+                case "w" :
+                    past_date = datetime.today() - relativedelta(weeks=int(result.group(1)))
+                case "m" :
+                    past_date = datetime.today() - relativedelta(months=int(result.group(1)))
+                case "y" :
+                    past_date = datetime.today() - relativedelta(years=int(result.group(1)))
+            expire_year = past_date.year - 1
+        else :
+            print("--expire-after is set to '{}', but is should be a number and a period specifier\nE.g. 1d = 1 day, 2w = 2 weeks, 3m = 3 months or 4y = 4 years".format(args.expire_after),file=sys.stderr)
+            exit(255)
+
 
     cve_api = cve_api_login()
     try:
@@ -170,6 +194,24 @@ if __name__ == '__main__':
             if cve["state"] == "RESERVED" or cve["state"] == "REJECTED" :
                 reserved[cve["cve_id"]] = cve
 
+        # We did not expire CVE IDs, yet.
+        expired = 0
+
+        # reservations.lock files
+        locked = []
+        for root, dirs, files in os.walk(args.reservations_path):
+            for file in files:
+                if file== "reservations.lock" :
+                    filename = os.path.join(root,file)
+                    with open(filename) as lf:
+                        for line in lf.readlines() :
+                            result = re.search(r"^\s*(CVE\-\d{4}\-\d{4,})?\s*(\#.*)?$", line)
+                            if result :
+                                if result.group(1):
+                                    locked.append(result.group(1))
+                            else:
+                                print("Incorrect line in {} ignored:\n{}".format(filename, line))
+
         # First local files
         for root, dirs, files in os.walk(args.reservations_path):
             for file in files:
@@ -219,11 +261,19 @@ if __name__ == '__main__':
                             json_data
                         )
                         if diff :
-                            print(diff)
-                            print("Local record for {} updated.".format(cve_id))
                             write_json_file(filename, reserved[cve_id])
+                            print("Local record for {} updated.".format(cve_id))
                         else :
                             print("Record for {} is up to date.".format(cve_id))
+
+                    # Do we need to expire local reservations?
+                    if file_valid and args.expire_after and reserved[cve_id]["state"] != "REJECTED" and cve_id not in locked:
+                        result = re.search(r"^CVE\-(\d{4})\-", cve_id)
+                        if int(result.group(1)) <= expire_year :
+                            reserved[cve_id]["state"] = "REJECTED"
+                            write_json_file(filename, reserved[cve_id])
+                            print("Local reservation for {} updated to expire reservation.".format(cve_id))
+                            expired = expired + 1
 
                     if file_valid:
                         del reserved[cve_id]
@@ -236,4 +286,7 @@ if __name__ == '__main__':
                 print("Created {}/{}.json".format(args.reservations_path,cve_id))
 
     print("\n{} record(s) created, {} record(s) updated.".format(created,updated))
+
+    if expired > 0 :
+        print("{} local reservation(s) updated because they expired, add these CVE IDs to an expired.lock file to preserve them.".format(expired))
 
