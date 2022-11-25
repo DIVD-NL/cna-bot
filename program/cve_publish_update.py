@@ -82,7 +82,6 @@ if __name__ == '__main__':
 
 
 
-
     cve_api = cve_api_login()
     try:
         org = cve_api.show_org()
