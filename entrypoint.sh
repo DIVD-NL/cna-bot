@@ -18,6 +18,7 @@
 
 # Fail if we encounter an error
 set -e
+set -x
 
 # Process env variables
 if [[ $( echo $CVE_PATH | egrep "^\/" | wc -l ) -gt 0 ]] ; then
@@ -75,10 +76,7 @@ echo "*** Checking CVE records ***"
 rm -f /tmp/cve_check.log
 CMD="/run/cve_check.py --path $CVE_PATH $IGNORE_CHECKS $MIN_RESERVED $RESERVE $RESERVATIONS_TOO $DO_RESERVATIONS --schema /run/cve50.json --log /tmp/cve_check.log"
 echo "Running: $CMD"
-(
-	set +e
-	$CMD
-)
+$CMD || echo "Check faild"
 
 if [[ $( wc -l /tmp/cve_check.log ) -gt 0 ]] ;
 	if [[ ! -z "${GITHUB_TOKEN}" ]]; then
