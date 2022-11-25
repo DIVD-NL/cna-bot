@@ -66,7 +66,6 @@ Example values are:
 * `2m` for 2 months, reservations will expire on or after 1 Mar
 * `1y` for 1 year, reserveration will expire on or after 1 Jan for reservations before the previous year
 
-
 ## Example usage
 
 See: https://github.com/DIVD-NL/cna-admin-test
