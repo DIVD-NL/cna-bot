@@ -78,7 +78,7 @@ CMD="/run/cve_check.py --path $CVE_PATH $IGNORE_CHECKS $MIN_RESERVED $RESERVE $R
 echo "Running: $CMD"
 $CMD || echo "Check failed!"
 
-if [[ $( wc -l /tmp/cve_check.log ) -gt 0 ]] ; then
+if [[ $( cat /tmp/cve_check.log | wc -l ) -gt 0 ]] ; then
 	if [[ ! -z "${GITHUB_TOKEN}" ]]; then
 		gh pr comment ${GITHUB_BRANCH} -F /tmp/cve_check.log
 	fi
