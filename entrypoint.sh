@@ -18,6 +18,7 @@
 
 # Fail if we encounter an error
 set -e
+set -x
 
 # Process env variables
 if [[ $( echo $CVE_PATH | egrep "^\/" | wc -l ) -gt 0 ]] ; then
@@ -72,9 +73,29 @@ git config --global --add safe.directory $PWD
 
 # Check the CVE records
 echo "*** Checking CVE records ***"
-CMD="/run/cve_check.py --path $CVE_PATH $IGNORE_CHECKS $MIN_RESERVED $RESERVE $RESERVATIONS_TOO $DO_RESERVATIONS --schema /run/cve50.json"
+rm -f /tmp/cve_check.log
+CMD="/run/cve_check.py --path $CVE_PATH $IGNORE_CHECKS $MIN_RESERVED $RESERVE $RESERVATIONS_TOO $DO_RESERVATIONS --schema /run/cve50.json --log /tmp/cve_check.log"
 echo "Running: $CMD"
-$CMD
+$CMD || echo "Check failed!"
+
+	if [[ ! -z "${GITHUB_TOKEN}" ]]; then
+	if [[ $( cat /tmp/cve_check.log | wc -l ) -gt 0 ]] ; then
+		if [[ $( gh pr view --json author --jq .author.login ) != ${GITHUB_ACTOR} ]]; then
+			REVIEW="review -r"
+		else
+			REVIEW="comment"
+		fi
+		(
+			echo CNA-Bot detected errors in your PR:
+			echo
+			cat /tmp/cve_check.log
+		) | gh pr $REVIEW -F -
+		exit 1
+	else
+		gh pr comment -b "No problems detected"
+	fi
+fi
+
 
 if [[ "$CVE_PUBLISH" == "true" ]]; then
 	echo
