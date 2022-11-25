@@ -84,7 +84,7 @@ if [[ $( cat /tmp/cve_check.log | wc -l ) -gt 0 ]] ; then
 			echo CNA-Bot detected errors in your PR:
 			echo
 			cat /tmp/cve_check.log
-		) gh pr comment review -r -F -
+		) | gh pr comment review -r -F -
 	fi
 	exit 1
 fi
