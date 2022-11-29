@@ -206,6 +206,16 @@ def publisher_match(file,json_data,args,type) :
     else :
         return False, "We don't own {}".format(cve_id)
 
+def duplicate_check(file,json_data,args,type) :
+    global cve2file
+    cve_id = os.path.basename(file).replace(".json","")
+    if cve_id in cve2file :
+        return False, "There when checking {} we found that file {} also exists for {}".format(file, cve2file[cve_id], cve_id)
+    else:
+        cve2file[cve_id] = file
+    return True, None
+
+
 # Checks object and global variables
 # Supported types are:
 # gen  - generic check, not a per file check
@@ -222,9 +232,11 @@ checks = {
     "has_record"        : { "type": "file", "func": has_record,        "description" : "Check if a CVE ID is reserved or published for this CVE record" },
     "state_match"       : { "type": "file", "func": state_match,       "description" : "Check if local and remote CVE record is consistent" },
     "publisher_match"   : { "type": "file", "func": publisher_match,   "description" : "Check if CVE record is owned by us" },
+    "duplicate"         : { "type": "file", "func": duplicate_check,   "description" : "Check if you have only one file for each CVE" },
 }
 
 cves = []
+cve2file = {}
 
 # Helper functions
 
@@ -241,6 +253,13 @@ def cve_api_login() -> CveApi:
     )
     return cve_api
 
+def log(result, file, logfile) :
+    if logfile :
+        with open(logfile, "a") as lfh:
+            if file :
+                lfh.write("In file {} :\n".format(file))
+            lfh.write("{}\n".format(result))
+
 # Main
 
 if __name__ == '__main__':
@@ -253,6 +272,7 @@ if __name__ == '__main__':
     parser.add_argument('--schema', type=str, metavar="./cve50.json", default="./cve50.json", help="Path to the CVE json50 schema file")
     parser.add_argument('--include-reservations', action="store_true", default=False, help="Include reservations in our records")
     parser.add_argument('--reservations-path', type=str, metavar="./reservations", default="", help="path of directory for reservations")
+    parser.add_argument('--log', type=str, metavar="/tmp/cve_check.log", default="", help="Log errors to this file")
 
     args = parser.parse_args()
 
@@ -305,14 +325,15 @@ if __name__ == '__main__':
                         print(result)
                 else:
                     print("FAIL\n{}".format(result))
+                    log(result,None,args.log)
                     check_pass = False
             else:
                 print("SKIP")
     print()
     # CVE record checks
-    for root, dirs, files in os.walk(args.path):
+    for root, dirs, files in sorted(os.walk(args.path)):
         # Walk all CVE records, execlude reservations
-        for file in files:
+        for file in sorted(files):
             if file.endswith(".json"):
                 filename = os.path.join(root,file)
                 if not filename.startswith(args.reservations_path) :
@@ -334,13 +355,14 @@ if __name__ == '__main__':
                                         print(result)
                                 else:
                                     check_pass = False
+                                    log(result,filename,args.log)
                                     print("FAIL\n{}".format(result))
                             else:
                                 print("SKIP")
                     print()
     # Reservation checks
-    for root, dirs, files in os.walk(args.reservations_path):
-        for file in files:
+    for root, dirs, files in sorted(os.walk(args.reservations_path)):
+        for file in sorted(files):
             if file.endswith(".json"):
                 filename = os.path.join(root,file)
                 print("File: {}".format(filename))
@@ -362,6 +384,7 @@ if __name__ == '__main__':
                             else:
                                 check_pass = False
                                 print("FAIL\n{}".format(result))
+                                log(result,filename,args.log)
                         else:
                             print("SKIP")
                 print()
