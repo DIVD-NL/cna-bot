@@ -4,48 +4,53 @@ This GitHub action validates CVE JSON 5.0 format records and (optionally) submit
 
 ## Inputs
 
-## `cve-user`
+### `cve-user`
 
 **Required** CVE services user name (usually the email address)
 
-## `cve-org`
+### `cve-org`
 
 **Required** CVE services organisation
 
-
-## `cve-api-key`
+### `cve-api-key`
 
 **Required** CVE services api key (Please store this in a GitHub secret)
 
-## `cve-environment`
+### `cve-environment`
 
 **Required** CVE services environment (defaults to test)
 
-## `publish`
+### `publish`
 
 Set to `true` to publish the records to the CVE services (defaults to false)
 
-## `path`
+### `path`
 
 Path to find CVE records in. Any \*.json file in this riectory is considered a CVE record (defaults to `.`)
 
-## `ignore`
+### `ignore`
 
 Comma separted list of checks to ignore.
 
-## `min-reserved`
+### `min-reserved`
 
 Minimum number of reserved records for the current year.
 
 Action will fail if the number of records in RESERVED state drops below this amount. If `reserve` is set to a number above 0 this action will reserve this many new records.
 
-## `reserve`
+### `reserve`
 
 Minimum number of records to reserve in one go (0=do not make reservations)
 
-## `pr`
+### `pr`
 
 Create a pull request to bring local records in line with remote records (defaults to `false`)
+
+## Versions
+
+For the stable version use `DIVD-NL/cna-bot@v1` (reccomended)
+
+For the current beta version use `DIVD-NL/cna-bot@v1.3`
 
 ## Example usage
 
