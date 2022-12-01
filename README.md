@@ -4,28 +4,27 @@ This GitHub action validates CVE JSON 5.0 format records and (optionally) submit
 
 ## Inputs
 
-## `cve-user`
+### `cve-user`
 
 **Required** CVE services user name (usually the email address)
 
-## `cve-org`
+### `cve-org`
 
 **Required** CVE services organisation
 
-
-## `cve-api-key`
+### `cve-api-key`
 
 **Required** CVE services api key (Please store this in a GitHub secret)
 
-## `cve-environment`
+### `cve-environment`
 
 **Required** CVE services environment (defaults to test)
 
-## `publish`
+### `publish`
 
 Set to `true` to publish the records to the CVE services (defaults to false)
 
-## `path`
+### `path`
 
 Path to find CVE records in. Any \*.json file in this directory is considered a CVE record (defaults to `.`)
 
@@ -33,31 +32,31 @@ Path to find CVE records in. Any \*.json file in this directory is considered a 
 
 Path to find CVE ID reservations in. Any \*.json file in this directory is considered a CVE ID reservation (defaults to `<path>/reservations`)
 
-## `ignore`
+### `ignore`
 
 Comma separted list of checks to ignore.
 
-## `min-reserved`
+### `min-reserved`
 
 Minimum number of reserved records for the current year.
 
 Action will fail if the number of records in RESERVED state drops below this amount. If `reserve` is set to a number above 0 this action will reserve this many new records.
 
-## `reserve`
+### `reserve`
 
 Minimum number of records to reserve in one go (0=do not make reservations)
 
-## `pr`
+### `pr`
 
 Create a pull request to bring local records in line with remote records (defaults to `false`)
 
-## `github-token`
+### `github-token`
 
 A github token to be used by this action. Default ` `. Recommended value: ${{ secrets.GITHUB_TOKEN }}
 
 If you want github actions to run on pull requests created by this action you will have to use a personal Github Access token with at least the `repo`, `org:read` and `discussion:read` scopes.
 
-## `expire-after`
+### `expire-after`
 
 Create pull request (if `pr` is set to `true`) to expire reservations this much time after the end of the year.
 Example values are:
@@ -65,6 +64,12 @@ Example values are:
 * `3w` for 4 weeks, reservations will expire on or after 15 Jan
 * `2m` for 2 months, reservations will expire on or after 1 Mar
 * `1y` for 1 year, reserveration will expire on or after 1 Jan for reservations before the previous year
+
+## Versions
+
+For the stable version use `DIVD-NL/cna-bot@v1` (recommended)
+
+For the current beta version use `DIVD-NL/cna-bot@v1.3`
 
 ## Example usage
 
