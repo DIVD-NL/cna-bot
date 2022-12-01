@@ -142,7 +142,7 @@ if __name__ == '__main__':
                             print(e)
                         else:
                             print(result["message"])
-                            created=createded+1
+                            created=created+1
 
 
                     if file_valid and cve_metadata["state"] == "PUBLISHED" and json_data["cveMetadata"]["state"] == "PUBLISHED":
