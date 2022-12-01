@@ -98,6 +98,13 @@ if [[ ! -z "${GITHUB_TOKEN}" ]]; then
 	else
 		gh pr comment -b "No problems detected" | echo "Not leaving a comment"
 	fi
+else
+	if [[ $( cat /tmp/cve_check.log | wc -l ) -gt 0 ]] ; then
+		echo CNA-Bot detected errors in your CVE records:
+		echo
+		cat /tmp/cve_check.log
+		exit 1
+	fi
 fi
 
 
