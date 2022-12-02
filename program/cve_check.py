@@ -215,6 +215,78 @@ def duplicate_check(file,json_data,args,type) :
         cve2file[cve_id] = file
     return True, None
 
+def has_refs(file,json_data,args,type) :
+    cve_id = os.path.basename(file).replace(".json","")
+    if "references" in json_data["containers"]["cna"] and len(json_data["containers"]["cna"]["references"]) > 0 :
+        return True, None
+    else :
+        return False, "No references found, at least one reference is required."
+
+def refs_url(file,json_data,args,type) :
+    cve_id = os.path.basename(file).replace(".json","")
+    if "references" in json_data["containers"]["cna"] and len(json_data["containers"]["cna"]["references"]) > 0 :
+        invalid = []
+        for ref in json_data["containers"]["cna"]["references"] :
+            if not re.match(r"^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$", ref["url"]) :
+                invalid.append(ref["url"])
+        if len(invalid) > 0 :
+            return False, "The following references are not valid URLs:\n* \"{}\"".format("\"\n* \"".join(invalid))
+        else:
+            return True, None
+    else :
+        return False, "No references found, at least one reference is required."
+
+def refs_tagged(file,json_data,args,type) :
+    cve_id = os.path.basename(file).replace(".json","")
+    if "references" in json_data["containers"]["cna"] and len(json_data["containers"]["cna"]["references"]) > 0 :
+        invalid = []
+        for ref in json_data["containers"]["cna"]["references"] :
+            if "tags" in ref and len(ref["tags"]) > 0 :
+                for tag in ref["tags"]:
+                    if not tag:
+                        invalid.append(ref["url"])
+            else :
+                invalid.append(ref["url"])
+        if len(invalid) > 0 :
+            return False, "The following references are not tagged or tagged with an empty tag:\n* \"{}\"".format("\"\n* \"".join(invalid))
+        else:
+            return True, None
+    else :
+        return False, "No references found, at least one reference is required."
+
+def vendor_advisory(file,json_data,args,type) :
+    cve_id = os.path.basename(file).replace(".json","")
+    if "references" in json_data["containers"]["cna"] and len(json_data["containers"]["cna"]["references"]) > 0 :
+        found = False
+        for ref in json_data["containers"]["cna"]["references"] :
+            if "tags" in ref and len(ref["tags"]) > 0 :
+                for tag in ref["tags"]:
+                    if tag == "vendor-advisory":
+                        found = True
+        if not found :
+            return False, "None of the references are tagged as a 'vendor-advisory'"
+        else:
+            return True, None
+    else :
+        return False, "No references found, at least one reference is required."
+
+def advisory(file,json_data,args,type) :
+    cve_id = os.path.basename(file).replace(".json","")
+    if "references" in json_data["containers"]["cna"] and len(json_data["containers"]["cna"]["references"]) > 0 :
+        found = False
+        for ref in json_data["containers"]["cna"]["references"] :
+            if "tags" in ref and len(ref["tags"]) > 0 :
+                for tag in ref["tags"]:
+                    if tag == "vendor-advisory" or "third-party-advisory":
+                        found = True
+        if not found :
+            return False, "None of the references are tagged as a 'vendor-advisory' or 'third-party-advisory'"
+        else:
+            return True, None
+    else :
+        return False, "No references found, at least one reference is required."
+
+
 
 # Checks object and global variables
 # Supported types are:
@@ -224,15 +296,20 @@ def duplicate_check(file,json_data,args,type) :
 # res  - check that applies to a reservation record (in reservations_path)
 
 checks = {
-    "min_reserved"      : { "type": "gen",  "func": minimum_reserved,  "description" : "Check if we have am minimum number of reserved entries" },
-    "publ_in_path"      : { "type": "gen",  "func": published_in_repo, "description" : "Check if all published CVE records are in the path"},
-    "reserve_in_path"   : { "type": "gen",  "func": reserved_in_repo,  "description" : "Check if all reserved CVE records are in the (reserved) path"},
-    "json_valid"        : { "type": "file", "func": file_valid_json1,  "description" : "Check if the file name/location is valid" },
-    "filename"          : { "type": "file", "func": file_name,         "description" : "Check if a file is valid JSON" },
-    "has_record"        : { "type": "file", "func": has_record,        "description" : "Check if a CVE ID is reserved or published for this CVE record" },
-    "state_match"       : { "type": "file", "func": state_match,       "description" : "Check if local and remote CVE record is consistent" },
-    "publisher_match"   : { "type": "file", "func": publisher_match,   "description" : "Check if CVE record is owned by us" },
-    "duplicate"         : { "type": "file", "func": duplicate_check,   "description" : "Check if you have only one file for each CVE" },
+    "min_reserved"    : { "type": "gen",  "func": minimum_reserved,  "description" : "Is a minimum number of entries reserved?" },
+    "publ_in_path"    : { "type": "gen",  "func": published_in_repo, "description" : "Are all published CVE records  in the path?"},
+    "reserve_in_path" : { "type": "gen",  "func": reserved_in_repo,  "description" : "Are all reserved CVE ID in the (reserved) path?"},
+    "json_valid"      : { "type": "file", "func": file_valid_json1,  "description" : "Is the file name/location valid?" },
+    "filename"        : { "type": "file", "func": file_name,         "description" : "Is the  file valid JSON?" },
+    "has_record"      : { "type": "file", "func": has_record,        "description" : "Is the CVE ID reserved or published?" },
+    "state_match"     : { "type": "file", "func": state_match,       "description" : "Are the local and remote states consistent?" },
+    "publisher_match" : { "type": "file", "func": publisher_match,   "description" : "Is the CVE record owned by us?" },
+    "duplicate"       : { "type": "file", "func": duplicate_check,   "description" : "Is there only one file for each CVE ID?" },
+    "has_refs"        : { "type": "cve",  "func": has_refs,          "description" : "Does the record have references?" },
+    "refs_url"        : { "type": "cve",  "func": refs_url,          "description" : "Are references valid urls?" },
+    "refs_tagged"     : { "type": "cve",  "func": refs_tagged,       "description" : "Are all references tagged?" },
+    "vendor-advisory" : { "type": "cve",  "func": vendor_advisory,   "description" : "Is a reference tagged as vendor-advisory?" },
+    "advisory"        : { "type": "cve",  "func": advisory,          "description" : "Is a reference tagged as vendor-advisory or third-party-advisory?" },
 }
 
 cves = []
