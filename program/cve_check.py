@@ -286,6 +286,28 @@ def advisory(file,json_data,args,type) :
     else :
         return False, "No references found, at least one reference is required."
 
+def divd_links(file,json_data,args,type) :
+    cve_id = os.path.basename(file).replace(".json","")
+    if "references" in json_data["containers"]["cna"] and len(json_data["containers"]["cna"]["references"]) > 0 :
+        invalid = []
+        for ref in json_data["containers"]["cna"]["references"] :
+            if re.match(r"^https?\://csirt\.divd\.nl/",ref["url"]) :
+                result = re.match(r"^http://(.*)", ref["url"])
+                if result :
+                    invalid.append("{} - insure, please use https://{}".format(ref["url"],result.group(1)))
+                result = re.match(r"^https?\://csirt\.divd\.nl\/cases\/(DIVD\-\d{4}\-\d+)/?$", ref["url"])
+                if result :
+                    invalid.append("{} - please use permalink https://csirt.divd.nl/{}/ instead".format(ref["url"],result.group(1)))
+                result = re.match(r"^https?\://csirt\.divd\.nl\/cves\/(CVE\-\d{4}\-\d+)/?$", ref["url"])
+                if result :
+                    invalid.append("{} - please use permalink https://csirt.divd.nl/{}/ instead".format(ref["url"],result.group(1)))
+        if len(invalid) > 0 :
+            return False, "The following links to DIVD sites are not ok:\n* \"{}\"".format("\"\n* \"".join(invalid))
+        else:
+            return True, None
+    else :
+        return False, "No references found, at least one reference is required."
+
 
 
 # Checks object and global variables
@@ -308,6 +330,7 @@ checks = {
     "has_refs"        : { "type": "cve",  "func": has_refs,          "description" : "Does the record have references?" },
     "refs_url"        : { "type": "cve",  "func": refs_url,          "description" : "Are references valid urls?" },
     "refs_tagged"     : { "type": "cve",  "func": refs_tagged,       "description" : "Are all references tagged?" },
+    "divd_links"      : { "type": "cve",  "func": divd_links,        "description" : "Are DIVD urls in references ok?" },
     "vendor-advisory" : { "type": "cve",  "func": vendor_advisory,   "description" : "Is a reference tagged as vendor-advisory?" },
     "advisory"        : { "type": "cve",  "func": advisory,          "description" : "Is a reference tagged as vendor-advisory or third-party-advisory?" },
 }
