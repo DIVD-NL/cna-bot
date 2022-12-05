@@ -69,7 +69,7 @@ Example values are:
 
 For the stable version use `DIVD-NL/cna-bot@v1` (recommended)
 
-For the current beta version use `DIVD-NL/cna-bot@v1.3`
+For the current beta version use `DIVD-NL/cna-bot@v1.4`
 
 ## Example usage
 
