@@ -66,6 +66,16 @@ if [[ ! -z "$EXPIRE_AFTER" ]]; then
 	EXPIRE="--expire-after $EXPIRE_AFTER"
 fi
 
+if [[ "$QUIET" == "true" ]]; then
+	VERBOSE_FLAG="-q"
+else
+	if [[ "$VERBOSE" == "true" ]]; then
+		VERBOSE_FLAG="-v"
+	else
+		VERBOSE_FLAG=""
+	fi
+fi
+
 # Check if we have CVE Services credentials
 if [[ "$CVE_USER" == "" || "$CVE_ORG" == "" || "$CVE_API_KEY" == "" || "$CVE_ENVIRONMENT" == "" ]] ; then
 	echo "Authentication variables for cvelib are not set."
@@ -77,8 +87,8 @@ git config --global --add safe.directory $PWD
 
 # Check the CVE records
 echo "*** Checking CVE records ***"
-rm -f /tmp/cve_check.log
-CMD="/run/cve_check.py --path $CVE_PATH $IGNORE_CHECKS $MIN_RESERVED $RESERVE $RESERVATIONS_TOO $DO_RESERVATIONS --schema /run/cve50.json --log /tmp/cve_check.log"
+rm -f /tmp/cve_check.log && touch /tmp/cve_check.log
+CMD="/run/cve_check.py --path $CVE_PATH $IGNORE_CHECKS $MIN_RESERVED $RESERVE $RESERVATIONS_TOO $DO_RESERVATIONS $VERBOSE_FLAG --schema /run/cve50.json --log /tmp/cve_check.log"
 echo "Running: $CMD"
 $CMD || echo "Check failed!"
 

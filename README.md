@@ -65,6 +65,15 @@ Example values are:
 * `2m` for 2 months, reservations will expire on or after 1 Mar
 * `1y` for 1 year, reserveration will expire on or after 1 Jan for reservations before the previous year
 
+### `verbose`
+
+Set to true to increase the output levels. (Defaults to `false`)
+
+### `quiet`
+
+Set to true to output only the minimul output. (Defaults to `false`)
+If both `verbose` and `quiet` are set, `quiet` wins
+
 ## Versions
 
 For the stable version use `DIVD-NL/cna-bot@v1` (recommended)

@@ -91,7 +91,7 @@ def reserved_in_repo(args):
         else:
             return True, None
     else:
-        return True, "N/A"
+        return True, None
 
 
 # File based checks
@@ -198,13 +198,16 @@ def state_match(file,json_data,args,type) :
 
 def publisher_match(file,json_data,args,type) :
     cve_id = os.path.basename(file).replace(".json","")
-    metadata = cve_api.show_cve_id(cve_id)
+    try :
+        metadata = cve_api.show_cve_id(cve_id)
+    except:
+        metadata = None
     if metadata :
         if metadata["owning_cna"] != org["short_name"] :
             return False, "Owner mismatch: remote is owned by '{}' but we are '{}'".format(metadata["owning_cna"],org["short_name"])
         return True, None
     else :
-        return False, "We don't own {}".format(cve_id)
+        return False, "Cannot check owership of {}".format(cve_id)
 
 def duplicate_check(file,json_data,args,type) :
     global cve2file
@@ -237,6 +240,7 @@ checks = {
 
 cves = []
 cve2file = {}
+verbose = 1
 
 # Helper functions
 
@@ -260,6 +264,13 @@ def log(result, file, logfile) :
                 lfh.write("In file {} :\n".format(file))
             lfh.write("{}\n".format(result))
 
+def out(str, level=1, max_level=9999, end="\n") :
+    global verbose
+    if level <= verbose and verbose <= max_level:
+        print(str, end=end)
+        if end == "" :
+            sys.stdout.flush()
+
 # Main
 
 if __name__ == '__main__':
@@ -273,14 +284,20 @@ if __name__ == '__main__':
     parser.add_argument('--include-reservations', action="store_true", default=False, help="Include reservations in our records")
     parser.add_argument('--reservations-path', type=str, metavar="./reservations", default="", help="path of directory for reservations")
     parser.add_argument('--log', type=str, metavar="/tmp/cve_check.log", default="", help="Log errors to this file")
+    parser.add_argument('-v', '--verbose', action="count", default=1, help="Be (more) verbose" )
+    parser.add_argument('-q', '--quiet', action="store_true", default=False, help="Be quiet, only output errors")
 
     args = parser.parse_args()
 
+    if args.quiet :
+        verbose = 0
+    else:
+        verbose = args.verbose
 
     if args.list > 0 :
-        print("The following checks are available:")
+        out("The following checks are available:",1)
         for id in checks:
-            print("{:15s} - {}".format(id,checks[id]["description"]))
+            out("{:15s} - {}".format(id,checks[id]["description"]),0)
         exit(0)
 
     skips=args.skip.split(",")
@@ -313,23 +330,29 @@ if __name__ == '__main__':
         exit(255)
     cves = list(cve_api.list_cves())
 
+    out("Global checks\n-------------",1)
     check_pass = True
     for id in checks:
         if checks[id]["type"] == "gen":
-            print("{:15s}...".format(id),end='')
+            out("{:15s}...".format(id),2,end='')
             if id not in skips :
                 passed, result = checks[id]["func"](args)
                 if passed :
-                    print("PASS")
+                    out("PASS",2)
+                    out(".",1,end="",max_level=1)
                     if(result):
-                        print(result)
+                        out("\n{} result:".format(id),2)
+                        out(result,2)
                 else:
-                    print("FAIL\n{}".format(result))
+                    out("FAIL\n{}".format(result),2)
+                    out("{} FAILED:\n{}".format(id,result),0,max_level=1)
                     log(result,None,args.log)
                     check_pass = False
             else:
-                print("SKIP")
-    print()
+                out("SKIP",2)
+                out("-",1,max_level=1,end="")
+    out("\nFile based checks\n-----------------",1)
+
     # CVE record checks
     for root, dirs, files in sorted(os.walk(args.path)):
         # Walk all CVE records, execlude reservations
@@ -337,57 +360,72 @@ if __name__ == '__main__':
             if file.endswith(".json"):
                 filename = os.path.join(root,file)
                 if not filename.startswith(args.reservations_path) :
-                    print("File: {}".format(filename))
+                    out("File: {}".format(filename),2)
                     try:
                         f = open(filename)
                         json_data = json.load(f)
                         f.close()
                     except:
-                        json_data={}
-                    for id in checks:
-                        if ( checks[id]["type"] == "file" or checks[id]["type"] == "cve" ) :
-                            print("{:15s}...".format(id),end='')
-                            if id not in skips :
-                                passed, result = checks[id]["func"](filename,json_data,args,"cve")
-                                if passed :
-                                    print("PASS")
-                                    if(result):
-                                        print(result)
+                        out("File does not contain valid JSON. Not checking.",2)
+                        out("\nFile '{}' does not contain valid JSON. Not checking.".format(filename),0,max_level=1)
+                        check_pass = False
+                        log("File does not contain valid JSON. Not checking.",filename,args.log)
+                    else:
+                        for id in checks:
+                            if ( checks[id]["type"] == "file" or checks[id]["type"] == "cve" ) :
+                                out("{:15s}...".format(id),2,end='')
+                                if id not in skips :
+                                    passed, result = checks[id]["func"](filename,json_data,args,"cve")
+                                    if passed :
+                                        out("PASS",2)
+                                        out(".",1,max_level=1,end="")
+                                        if(result):
+                                            out(result,2)
+                                    else:
+                                        check_pass = False
+                                        out("FAIL\n{}".format(result),2)
+                                        out("\nFile '{}', check '{}', FAILED\n{}".format(filename, id, result),0,max_level=1)
+                                        log(result,filename,args.log)
                                 else:
-                                    check_pass = False
-                                    log(result,filename,args.log)
-                                    print("FAIL\n{}".format(result))
-                            else:
-                                print("SKIP")
-                    print()
+                                    out("SKIP",2)
+                                    out("-",1,max_level=1,end="")
+                    out("",2)
     # Reservation checks
     for root, dirs, files in sorted(os.walk(args.reservations_path)):
         for file in sorted(files):
             if file.endswith(".json"):
                 filename = os.path.join(root,file)
-                print("File: {}".format(filename))
+                out("File: {}".format(filename),2)
                 try:
                     f = open(filename)
                     json_data = json.load(f)
                     f.close()
                 except:
-                    json_data={}
-                for id in checks:
-                    if ( checks[id]["type"] == "file" or checks[id]["type"] == "res" ) :
-                        print("{:15s}...".format(id),end='')
-                        if id not in skips :
-                            passed, result = checks[id]["func"](filename,json_data,args,"res")
-                            if passed :
-                                print("PASS")
-                                if(result):
-                                    print(result)
+                    check_pass = False
+                    out("FAIL\n{}".format(result),2)
+                    out("\nFile '{}', check '{}', FAILED\n{}".format(filename, id, result),0,max_level=1)
+                    log(result,filename,args.log)
+                else :
+                    for id in checks:
+                        if ( checks[id]["type"] == "file" or checks[id]["type"] == "res" ) :
+                            out("{:15s}...".format(id),2,end='')
+                            if id not in skips :
+                                passed, result = checks[id]["func"](filename,json_data,args,"res")
+                                if passed :
+                                    out("PASS",2)
+                                    out(".",1,max_level=1,end="")
+                                    if(result):
+                                        out(result,2)
+                                else:
+                                    check_pass = False
+                                    out("FAIL\n{}".format(result),2)
+                                    out("\nFile '{}', check '{}', FAILED\n{}".format(filename, id, result),0,max_level=1)
+                                    log(result,filename,args.log)
                             else:
-                                check_pass = False
-                                print("FAIL\n{}".format(result))
-                                log(result,filename,args.log)
-                        else:
-                            print("SKIP")
-                print()
+                                out("SKIP",2)
+                                out("-",1,max_level=1,end="")
+                out("",2)
+    out("",1,max_level=1)
     if check_pass == True:
         exit(0)
     else:
