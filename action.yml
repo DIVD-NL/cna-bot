@@ -54,6 +54,12 @@ inputs:
   expire-after:
     description: 'Create PR to expire reservations this much time after the end of the year (e.g 4d, 3w, 2m or 1y)'
     default: ''
+  verbose :
+    description: 'Verbose output'
+    default: false
+  quiet :
+    description: 'Minimal output (wins over verbose)'
+    default: false
 
 runs:
   using: 'docker'
@@ -75,3 +81,5 @@ runs:
     INCLUDE_RESERVATIONS :  ${{ inputs.check-reservations }}
     RESERVATIONS_PATH :     ${{ inputs.reservations-path }}
     EXPIRE_AFTER :          ${{ inputs.expire-after }}
+    VERBOSE :               ${{ inputs.verbose }}
+    QUIET :                 ${{ inputs.quiet }}
