@@ -96,7 +96,7 @@ on:
     branches:
       - 'main'
   schedule:
-    - cron: "5 4 * * *"
+    - cron: "5 4 * * *" #  This should be changed to another cron value.
 
 
 jobs:
@@ -110,19 +110,19 @@ jobs:
       - name: CVE RSUS check and upload
         uses: DIVD-NL/cna-bot@v1
         with: 
-          cve-user        : ${{ secrets.CVE_USER }}
-          cve-org         : ${{ secrets.CVE_ORG }}
-          cve-api-key     : ${{ secrets.CVE_API_KEY }}
-          cve-environment : test                                        # Change to prod for actual use
-          publish         : ${{ github.ref == 'refs/heads/main' }}      # Only publish when we merge into the main branch
-          path            : records                                     # This is where the CVE records live
-          path            : records/reservations                        # This is where reservation CVE IDs live
-          ignore          : ""                                          # Don't ignore any checks
-          min-reserved    : 10                                          # Keep at least 10 reserved records (for the current year)
-          reserve         : 10                                          # Reserve a minimum of 10 records at a time 
-          pr              : ${{ github.event_name != 'pull_request' }}  # Create a PR when we push or run on schedule
-          github-token    : ${{ secrets.GITHUB_TOKEN }}          
-          expire-after    : "1y"
+          cve-user          : ${{ secrets.CVE_USER }}
+          cve-org           : ${{ secrets.CVE_ORG }}
+          cve-api-key       : ${{ secrets.CVE_API_KEY }}
+          cve-environment   : test                                        # Change to prod for actual use
+          publish           : ${{ github.ref == 'refs/heads/main' }}      # Only publish when we merge into the main branch
+          path              : records                                     # This is where the CVE records live
+          reservations-path : records/reservations                        # This is where reservation CVE IDs live
+          ignore            : ""                                          # Don't ignore any checks
+          min-reserved      : 10                                          # Keep at least 10 reserved records (for the current year)
+          reserve           : 10                                          # Reserve a minimum of 10 records at a time 
+          pr                : ${{ github.event_name != 'pull_request' }}  # Create a PR when we push or run on schedule
+          github-token      : ${{ secrets.GITHUB_TOKEN }}          
+          expire-after      : "1y"
 
 ```
 
