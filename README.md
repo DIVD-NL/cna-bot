@@ -54,7 +54,7 @@ Create a pull request to bring local records in line with remote records (defaul
 
 A github token to be used by this action. Default ` `. Recommended value: ${{ secrets.GITHUB_TOKEN }}
 
-If you want github actions to run on pull requests created by this action you will have to use a personal Github Access token with at least the `repo`, `org:read` and `discussion:read` scopes.
+If you want github actions to run on pull requests created by this action you will have to use a personal Github Access token with at least the `repo` and `org:read` scopes and grant the bot write access to the repo.
 
 ### `expire-after`
 
