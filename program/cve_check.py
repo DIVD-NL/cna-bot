@@ -59,7 +59,7 @@ def published_in_repo(args):
                     break
             if not found:
                 results.append("No json file found for {}, use `cve show {} --raw --show-record > {}/{}.json` to add it".format(
-                            cve["cve_id"],cve["cve_id"],args.path, cve["cve_id"])
+                            cve["cve_id"],cve["cve_id"],args.path, cve["cve_id"]))
     if len(results) > 0:
         return False, "\n".join(results)
     else:
