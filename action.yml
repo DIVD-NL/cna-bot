@@ -21,7 +21,7 @@ inputs:
     default: test
   publish:
     description: 'Set to `true` to publish the records to the CVE services'
-    default: false
+    default: true
   path:
     description: 'Path to check and submit'
     default: "."
@@ -36,7 +36,7 @@ inputs:
     default: 0
   pr:
     description: 'Create a PR to bring local records in line with remote records.'
-    default: false
+    default: true
   github-token :
     description: 'Github token, usually automatically provided via `secrets.GITHUB_TOKEN`, required when pr is set to `true`'
   github-branch :
