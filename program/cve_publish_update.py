@@ -112,7 +112,7 @@ if __name__ == '__main__':
                         cve_id = json_data['cveMetadata']['cveId']
                     except:
                         json_data={}
-                        print("Unable to read json from file {}, skipping file.".format(filename),file=sys.stderr)
+                        print("Unable to read json from file '{}', skipping file.".format(filename),file=sys.stderr)
                         cve_id="INVALID"
                         file_valid=False
 
@@ -147,7 +147,7 @@ if __name__ == '__main__':
 
                     if file_valid and cve_metadata["state"] == "PUBLISHED" and json_data["cveMetadata"]["state"] == "PUBLISHED":
                         # We need to update the record if the local record is newer then the server record and the records are different
-                        file_date_str=exec("git log -1 --pretty='format:%ci' {}".format(filename))
+                        file_date_str=exec("git log -1 --pretty='format:%ci' '{}'".format(filename))
                         file_date = parse(file_date_str)
                         server_date = parse(cve_metadata["time"]["modified"])
                         if ( file_date > server_date or cve_metadata["state"] == "RESERVED" ) :
@@ -210,7 +210,7 @@ if __name__ == '__main__':
                                 if result.group(1):
                                     locked.append(result.group(1))
                             else:
-                                print("Incorrect line in {} ignored:\n{}".format(filename, line))
+                                print("Incorrect line in '{}' ignored:\n{}".format(filename, line))
 
         # First local files
         for root, dirs, files in os.walk(args.reservations_path):
@@ -232,7 +232,7 @@ if __name__ == '__main__':
                         cve_id = json_data['cve_id']
                     except:
                         json_data={}
-                        print("Unable to read json from file {}, skipping file.".format(filename),file=sys.stderr)
+                        print("Unable to read json from file '{}', skipping file.".format(filename),file=sys.stderr)
                         cve_id="INVALID"
                         file_valid=False
 
