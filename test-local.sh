@@ -6,11 +6,29 @@ if [[ "$CVE_ENVIRONMENT" != "test" ]]; then
 	exit 1
 fi
 
-docker build -t cve-rsus-validate-submit:local .
+docker build -t cve-rsus-validate-submit:local . || exit 1
+
+echo
+echo "*** Correct CVEs ***"
+echo
+
 docker run  \
 	-e CVE_ORG=$CVE_ORG \
 	-e CVE_USER=$CVE_USER \
 	-e CVE_ENVIRONMENT=$CVE_ENVIRONMENT \
 	-e CVE_API_KEY=$CVE_API_KEY \
+	-e CVE_PATH=test-cves \
 	-v $PWD:/cve \
 	-ti cve-rsus-validate-submit:local test-cves true
+echo
+echo "*** Error record CVEs ***"
+echo
+docker run  \
+	-e CVE_ORG=$CVE_ORG \
+	-e CVE_USER=$CVE_USER \
+	-e CVE_ENVIRONMENT=$CVE_ENVIRONMENT \
+	-e CVE_API_KEY=$CVE_API_KEY \
+	-e CVE_PATH=error-cves \
+	-v $PWD:/cve \
+	-ti cve-rsus-validate-submit:local test-cves true
+
