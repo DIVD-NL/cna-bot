@@ -22,6 +22,11 @@
 set -e
 
 # Process env variables
+if [[ "$CVE_PATH" == "" ]]; then
+	echo "CVE_PATH should not be empty, bailing out..."
+	exit 1
+fi
+
 if [[ $( echo $CVE_PATH | egrep "^\/" | wc -l ) -gt 0 ]] ; then
 	echo "CVE_PATH should be a relative path, '$CVE_PATH' isn't, bailing out..."
 	exit 1
@@ -50,14 +55,14 @@ if [[ -z "$RESERVATIONS_PATH" ]]; then
 	RESERVATIONS_PATH="$CVE_PATH/reservations/"
 fi
 
-if [[ "$INCLUDE_RESERVATIONS" == true ]]; then
+if [[ "$INCLUDE_RESERVATIONS" == "true" ]]; then
 	RESERVATIONS_TOO="--include-reservations"
 	DO_RESERVATIONS="--reservations-path $RESERVATIONS_PATH"
+	if [[ ! -d $RESERVATIONS_PATH ]]; then
+		mkdir $RESERVATIONS_PATH
+	fi
 fi
 
-if [[ $INCLUDE_RESERVATIONS == "true" && ! -d $RESERVATIONS_PATH ]]; then
-	mkdir $RESERVATIONS_PATH
-fi
 if [[ $( echo $RESERVATIONS_PATH | egrep "^\/" | wc -l ) -gt 0 ]] ; then
 	echo "RESERVATIONS_PATH should be a relative path, '$RESERVATIONS_PATH' isn't, bailing out..."
 	exit 1
@@ -89,6 +94,10 @@ git config --global --add safe.directory $PWD
 echo "*** Checking CVE records ***"
 rm -f /tmp/cve_check.log && touch /tmp/cve_check.log
 CMD="/run/cve_check.py --path $CVE_PATH $IGNORE_CHECKS $MIN_RESERVED $RESERVE $RESERVATIONS_TOO $DO_RESERVATIONS $VERBOSE_FLAG --schema /run/cve50.json --log /tmp/cve_check.log"
+echo "Running: $CMD"
+$CMD || echo "Check failed!"
+echo "*** Checking CVE records with cvelint ***"
+CMD="/run/cvelint $CVE_PATH"
 echo "Running: $CMD"
 $CMD || echo "Check failed!"
 
