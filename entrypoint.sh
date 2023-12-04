@@ -220,7 +220,7 @@ if [[ "$CVE_PUBLISH" == "true" ]]; then
 			fi
 			echo -e "\nCommiting changes to branch and creating pull request..."
 
-			# Add CVE records
+			# Add CVE records / reservations
 			git add $CVE_PATH
 			# Unstage reservations if they happend to be in $CVE_PATH
 			git restore --staged $RESERVATIONS_PATH
