@@ -51,6 +51,9 @@ inputs:
   reservations-path:
     description: 'Path where reservations are kept by default. (default: $path/reservations'
     default: ''
+  create-missing:
+    description: 'Create files for missing records from the CVE database (default: true)'
+    default: true
   expire-after:
     description: 'Create PR to expire reservations this much time after the end of the year (e.g 4d, 3w, 2m or 1y)'
     default: ''
@@ -80,6 +83,7 @@ runs:
     DO_PR :                 ${{ inputs.pr }}
     INCLUDE_RESERVATIONS :  ${{ inputs.check-reservations }}
     RESERVATIONS_PATH :     ${{ inputs.reservations-path }}
+    CREATE_MISSING :        ${{ inputs.create-missing }}
     EXPIRE_AFTER :          ${{ inputs.expire-after }}
     VERBOSE :               ${{ inputs.verbose }}
     QUIET :                 ${{ inputs.quiet }}
