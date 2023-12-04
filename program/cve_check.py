@@ -332,9 +332,9 @@ def divd_links(file,json_data,args,type) :
 # res  - check that applies to a reservation record (in reservations_path)
 
 checks = {
+    "min_reserved"    : { "type": "gen",  "func": minimum_reserved,  "description" : "Is a minimum number of entries reserved?" },
     "reserve_in_path" : { "type": "gen",  "func": reserved_in_repo,  "description" : "Are all reserved CVE ID in the (reserved) path?"},
     "publ_in_path"    : { "type": "gen",  "func": published_in_repo, "description" : "Are all published CVE records  in the path?"},
-    "min_reserved"    : { "type": "gen",  "func": minimum_reserved,  "description" : "Is a minimum number of entries reserved?" },
     "json_valid"      : { "type": "file", "func": file_valid_json1,  "description" : "Is the file name/location valid?" },
     "filename"        : { "type": "file", "func": file_name,         "description" : "Is the  file valid JSON?" },
     "has_record"      : { "type": "file", "func": has_record,        "description" : "Is the CVE ID reserved or published?" },

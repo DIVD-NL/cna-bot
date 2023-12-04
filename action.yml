@@ -83,7 +83,7 @@ runs:
     DO_PR :                 ${{ inputs.pr }}
     INCLUDE_RESERVATIONS :  ${{ inputs.check-reservations }}
     RESERVATIONS_PATH :     ${{ inputs.reservations-path }}
-    CREATE_RESERVATIONS :   ${{ inputs.create-reservations }}
+    CREATE_MISSING :        ${{ inputs.create-missing }}
     EXPIRE_AFTER :          ${{ inputs.expire-after }}
     VERBOSE :               ${{ inputs.verbose }}
     QUIET :                 ${{ inputs.quiet }}
