@@ -58,10 +58,16 @@ def published_in_repo(args):
                     found = True
                     break
             if not found:
-                results.append("No json file found for {}, use `cve show {} --raw --show-record > {}/{}.json` to add it".format(
-                            cve["cve_id"],cve["cve_id"],args.path, cve["cve_id"]))
+                if args.create_missing :
+                    exec("cve show {} --raw --show-record > {}/{}.json".format(
+                                cve["cve_id"],args.path, cve["cve_id"]))
+                    results.append("Created json file for {}:  {}/{}.json".format(
+                                cve["cve_id"],args.path, cve["cve_id"]))
+                else:
+                    results.append("No json file found for {}, use `cve show {} --raw --show-record > {}/{}.json` to add it".format(
+                                cve["cve_id"],cve["cve_id"],args.path, cve["cve_id"]))
     if len(results) > 0:
-        return False, "\n".join(results)
+        return args.create_missing, "\n".join(results)
     else:
         return True, None
 
@@ -83,12 +89,16 @@ def reserved_in_repo(args):
                             found = True
                             break
                 if not found:
-                    results.append(
-                        "No json file found for {}, use `cve show {} --raw > {}/{}.json` to add it".format(
-                            cve["cve_id"],cve["cve_id"],args.reservations_path, cve["cve_id"])
-                        )
+                    if args.create_missing :
+                        exec("cve show {} --raw > {}/{}.json".format(
+                                    cve["cve_id"],args.reservations_path, cve["cve_id"]))
+                        results.append("Created json file for {}:  {}/{}.json".format(
+                                    cve["cve_id"],args.reservations_path, cve["cve_id"]))
+                    else:
+                        results.append("No json file found for {}, use `cve show {} --raw > {}/{}.json` to add it".format(
+                                    cve["cve_id"],cve["cve_id"],args.reservations_path, cve["cve_id"]))
         if len(results) > 0:
-            return False, "\n".join(results)
+            return args.create_missing, "\n".join(results)
         else:
             return True, None
     else:
@@ -322,9 +332,9 @@ def divd_links(file,json_data,args,type) :
 # res  - check that applies to a reservation record (in reservations_path)
 
 checks = {
-    "min_reserved"    : { "type": "gen",  "func": minimum_reserved,  "description" : "Is a minimum number of entries reserved?" },
-    "publ_in_path"    : { "type": "gen",  "func": published_in_repo, "description" : "Are all published CVE records  in the path?"},
     "reserve_in_path" : { "type": "gen",  "func": reserved_in_repo,  "description" : "Are all reserved CVE ID in the (reserved) path?"},
+    "publ_in_path"    : { "type": "gen",  "func": published_in_repo, "description" : "Are all published CVE records  in the path?"},
+    "min_reserved"    : { "type": "gen",  "func": minimum_reserved,  "description" : "Is a minimum number of entries reserved?" },
     "json_valid"      : { "type": "file", "func": file_valid_json1,  "description" : "Is the file name/location valid?" },
     "filename"        : { "type": "file", "func": file_name,         "description" : "Is the  file valid JSON?" },
     "has_record"      : { "type": "file", "func": has_record,        "description" : "Is the CVE ID reserved or published?" },
@@ -346,6 +356,7 @@ verbose = 1
 # Helper functions
 
 def exec(cmd):
+    print("EXEC: {}\n".format(cmd))
     stream = os.popen(cmd)
     return(stream.read())
 
@@ -384,6 +395,7 @@ if __name__ == '__main__':
     parser.add_argument('--schema', type=str, metavar="./cve50.json", default="./cve50.json", help="Path to the CVE json50 schema file")
     parser.add_argument('--include-reservations', action="store_true", default=False, help="Include reservations in our records")
     parser.add_argument('--reservations-path', type=str, metavar="./reservations", default="", help="path of directory for reservations")
+    parser.add_argument('--create-missing', action="store_true", default=False, help="Create cve records from cve databazse when missing")
     parser.add_argument('--log', type=str, metavar="/tmp/cve_check.log", default="", help="Log errors to this file")
     parser.add_argument('-v', '--verbose', action="count", default=1, help="Be (more) verbose" )
     parser.add_argument('-q', '--quiet', action="store_true", default=False, help="Be quiet, only output errors")

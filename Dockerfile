@@ -8,7 +8,7 @@ RUN pip install cvelib jsonschema python-dateutil deepdiff
 COPY program/* /run/
 COPY entrypoint.sh /run/
 
-ADD https://github.com/mprpic/cvelint/releases/download/v0.1.0/cvelint_Linux_x86_64.tar.gz /tmp/
+ADD https://github.com/mprpic/cvelint/releases/download/v0.2.0/cvelint_Linux_x86_64.tar.gz /tmp/
 RUN tar -xvzf /tmp/cvelint_Linux_x86_64.tar.gz -C /run/
 
 # Code file to execute when the docker container starts up (`entrypoint.sh`)

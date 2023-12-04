@@ -12,12 +12,16 @@ echo
 echo "*** Correct CVEs ***"
 echo
 
+set -e # Fail on error
+
 docker run  \
 	-e CVE_ORG=$CVE_ORG \
 	-e CVE_USER=$CVE_USER \
 	-e CVE_ENVIRONMENT=$CVE_ENVIRONMENT \
 	-e CVE_API_KEY=$CVE_API_KEY \
 	-e CVE_PATH=test-cves \
+	-e INCLUDE_RESERVATIONS=true \
+	-e CREATE_MISSING=true \
 	-v $PWD:/cve \
 	-ti cve-rsus-validate-submit:local test-cves true
 echo
@@ -29,6 +33,7 @@ docker run  \
 	-e CVE_ENVIRONMENT=$CVE_ENVIRONMENT \
 	-e CVE_API_KEY=$CVE_API_KEY \
 	-e CVE_PATH=error-cves \
+	-e INCLUDE_RESERVATIONS=true \
 	-v $PWD:/cve \
 	-ti cve-rsus-validate-submit:local test-cves true
 

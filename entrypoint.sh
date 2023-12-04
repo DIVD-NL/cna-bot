@@ -15,7 +15,9 @@
 #    DO_PR :                 ${{ inputs.pr }}
 #    INCLUDE_RESERVATIONS :  ${{ inputs.check-reservations }}
 #    RESERVATIONS_PATH :     ${{ inputs.reservations-path }}
+#    CREATE_MISSING : 	     ${{ inpouts.create-missing }}
 #    EXPIRE_AFTER :          ${{ inputs.expire-after }}
+
 
 
 # Fail if we encounter an error
@@ -63,6 +65,11 @@ if [[ "$INCLUDE_RESERVATIONS" == "true" ]]; then
 	fi
 fi
 
+if [[ "$CREATE_MISSING" == "true" ]]; then
+	DO_MISSING="--create-missing"
+fi
+
+
 if [[ $( echo $RESERVATIONS_PATH | egrep "^\/" | wc -l ) -gt 0 ]] ; then
 	echo "RESERVATIONS_PATH should be a relative path, '$RESERVATIONS_PATH' isn't, bailing out..."
 	exit 1
@@ -93,16 +100,22 @@ git config --global --add safe.directory $PWD
 # Check the CVE records
 echo "*** Checking CVE records ***"
 rm -f /tmp/cve_check.log && touch /tmp/cve_check.log
-CMD="/run/cve_check.py --path $CVE_PATH $IGNORE_CHECKS $MIN_RESERVED $RESERVE $RESERVATIONS_TOO $DO_RESERVATIONS $VERBOSE_FLAG --schema /run/cve50.json --log /tmp/cve_check.log"
+CVE_CHECK_FAILED=0
+CMD="/run/cve_check.py --path $CVE_PATH $IGNORE_CHECKS $MIN_RESERVED $RESERVE $RESERVATIONS_TOO $DO_RESERVATIONS $DO_MISSING $VERBOSE_FLAG --schema /run/cve50.json --log /tmp/cve_check.log"
 echo "Running: $CMD"
-$CMD || echo "Check failed!"
+$CMD || CVE_CHECK_FAILED=1
+
 echo "*** Checking CVE records with cvelint ***"
+CVELINT_FAILED=0
 CMD="/run/cvelint $CVE_PATH"
 echo "Running: $CMD"
-$CMD || echo "Check failed!"
+$CMD | tee /tmp/cvelint.log
+if [[ $(grep "Found 0 errors." /tmp/cvelint.log | wc -l ) -ne 1 ]]; then
+	CVELINT_FAILED=1
+fi
 
 if [[ ! -z "${GITHUB_TOKEN}" ]]; then
-	if [[ $( cat /tmp/cve_check.log | wc -l ) -gt 0 ]] ; then
+	if [[ $CVE_CHECK_FAILED -eq 1 || $CVELINT_FAILED -eq 1 ]]; then
 		if [[ "$( gh pr view --json author --jq .author.login )" != "${GITHUB_ACTOR}" ]]; then
 			REVIEW="review -r"
 		else
@@ -110,18 +123,38 @@ if [[ ! -z "${GITHUB_TOKEN}" ]]; then
 		fi
 		(
 			echo CNA-Bot detected errors in your PR:
-			echo
-			cat /tmp/cve_check.log
+			if [[ $CVE_CHECK_FAILED -eq 1 ]]; then
+				echo
+				echo "*** cve_check.log ***"
+				echo
+				cat /tmp/cve_check.log
+			fi
+			if [[ $CVELINT_FAILED -eq 1 ]]; then
+				echo
+				echo "*** cvelint.log ***"
+				echo
+				cat /tmp/cvelint.log
+			fi
 		) | gh pr $REVIEW -F -
 		exit 1
 	else
 		gh pr comment -b "No problems detected" | echo "Not leaving a comment"
 	fi
 else
-	if [[ $( cat /tmp/cve_check.log | wc -l ) -gt 0 ]] ; then
-		echo CNA-Bot detected errors in your CVE records:
-		echo
-		cat /tmp/cve_check.log
+	if [[ $CVE_CHECK_FAILED -eq 1 || $CVELINT_FAILED -eq 1 ]]; then
+		echo CNA-Bot detected errors:
+		if [[ $CVE_CHECK_FAILED -eq 1 ]]; then
+			echo
+			echo "*** cve_check.log ***"
+			echo
+			cat /tmp/cve_check.log
+		fi
+		if [[ $CVELINT_FAILED -eq 1 ]]; then
+			echo
+			echo "*** cvelint.log ***"
+			echo
+			cat /tmp/cvelint.log
+		fi
 		exit 1
 	fi
 fi
