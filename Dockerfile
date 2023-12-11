@@ -1,8 +1,8 @@
 # Container image that runs your code
 FROM alpine:latest
 
-RUN apk update && apk add python3 py3-pip git github-cli  tar
-RUN pip install cvelib jsonschema python-dateutil deepdiff
+RUN apk update && apk add python3 py3-pip git github-cli tar
+RUN python3 -m venv /run/python/venv ; . /run/python/venv/bin/activate ; pip install cvelib jsonschema python-dateutil deepdiff
 
 # Copies your code file from your action repository to the filesystem path `/` of the container
 COPY program/* /run/

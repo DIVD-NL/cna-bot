@@ -308,7 +308,7 @@ def divd_links(file,json_data,args,type) :
             if re.match(r"^https?\://csirt\.divd\.nl/",ref["url"]) :
                 result = re.match(r"^http://(.*)", ref["url"])
                 if result :
-                    invalid.append("{} - insure, please use https://{}".format(ref["url"],result.group(1)))
+                    invalid.append("{} - insecure, please use https://{}".format(ref["url"],result.group(1)))
                 result = re.match(r"^https?\://csirt\.divd\.nl\/cases\/(DIVD\-\d{4}\-\d+)/?$", ref["url"])
                 if result :
                     invalid.append("{} - please use permalink https://csirt.divd.nl/{}/ instead".format(ref["url"],result.group(1)))

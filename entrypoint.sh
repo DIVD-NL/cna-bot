@@ -23,6 +23,9 @@
 # Fail if we encounter an error
 set -e
 
+# Python venv
+. /run/python/venv/bin/activate
+
 # Process env variables
 if [[ "$CVE_PATH" == "" ]]; then
 	echo "CVE_PATH should not be empty, bailing out..."
