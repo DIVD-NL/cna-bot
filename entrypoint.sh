@@ -23,6 +23,10 @@
 # Fail if we encounter an error
 set -e
 
+if [[ "$DEBUG" == "true" ]]; then
+	set -x
+fi
+
 # Python venv
 . /run/python/venv/bin/activate
 

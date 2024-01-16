@@ -59,8 +59,8 @@ def published_in_repo(args):
                     break
             if not found:
                 if args.create_missing :
-                    exec("cve show {} --raw --show-record > {}/{}.json".format(
-                                cve["cve_id"],args.path, cve["cve_id"]))
+                    with open("{}/{}.json".format(args.path, cve["cve_id"]), "w") as file:
+                        file.write(json.dumps(cve_api.show_cve_record(cve["cve_id"]), indent=2, sort_keys=True))
                     results.append("Created json file for {}:  {}/{}.json".format(
                                 cve["cve_id"],args.path, cve["cve_id"]))
                 else:
@@ -478,11 +478,11 @@ if __name__ == '__main__':
                         f = open(filename)
                         json_data = json.load(f)
                         f.close()
-                    except:
-                        out("File does not contain valid JSON. Not checking.",2)
-                        out("\nFile '{}' does not contain valid JSON. Not checking.".format(filename),0,max_level=1)
+                    except Exception as e:
+                        out("File '{}' does not contain valid JSON. Not checking.\nError is: {}".format(filename,str(e)),2)
+                        out("\nFile '{}' does not contain valid JSON. Not checking.\nError is {}".format(filename,str(e)),0,max_level=1)
                         check_pass = False
-                        log("File does not contain valid JSON. Not checking.",filename,args.log)
+                        log("File does not contain valid JSON. Not checking. Error is: {}".format(str(e)),filename,args.log)
                     else:
                         for id in checks:
                             if ( checks[id]["type"] == "file" or checks[id]["type"] == "cve" ) :
