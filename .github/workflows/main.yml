@@ -22,4 +22,4 @@ jobs:
           ignore:             publ_in_path,reserve_in_path
           pr:                 ${{ github.ref == 'refs/heads/main' }}
           github-token:       ${{ secrets.GITHUB_TOKEN }}
-          expired-after:      "1y"
+          expire-after:       "1y"
