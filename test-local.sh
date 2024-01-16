@@ -26,6 +26,7 @@ docker run  \
 	-e RESERVE=1 \
 	-v $PWD:/cve \
 	-ti cve-rsus-validate-submit:local test-cves true
+	#-e DEBUG=true \
 echo
 echo "*** Error record CVEs *** (preess ctrl+c to abort)"
 echo

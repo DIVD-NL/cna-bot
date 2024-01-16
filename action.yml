@@ -63,6 +63,9 @@ inputs:
   quiet :
     description: 'Minimal output (wins over verbose)'
     default: false
+  debug :
+    description: 'Most verbose output'
+    default: false
 
 runs:
   using: 'docker'
@@ -87,3 +90,4 @@ runs:
     EXPIRE_AFTER :          ${{ inputs.expire-after }}
     VERBOSE :               ${{ inputs.verbose }}
     QUIET :                 ${{ inputs.quiet }}
+    DEBUG:                  ${{ inputs.debug }}
