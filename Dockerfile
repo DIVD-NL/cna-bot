@@ -6,7 +6,7 @@ RUN python3 -m venv /run/python/venv ; . /run/python/venv/bin/activate ; pip ins
 
 # Copies your code file from your action repository to the filesystem path `/` of the container
 COPY program/* /run/
-COPY schemas/* /run/schemas
+COPY schemas/* /run/schemas/
 COPY entrypoint.sh /run/
 
 ADD https://github.com/mprpic/cvelint/releases/download/v0.2.0/cvelint_Linux_x86_64.tar.gz /tmp/
