@@ -4,7 +4,7 @@ import argparse
 import os
 import re
 import json
-from jsonschema import Draft202012Validator
+from jsonschema import Draft7Validator
 from jsonschema.exceptions import best_match
 import datetime
 import sys
@@ -119,12 +119,23 @@ def file_valid_json1(file,json_data,args,type) :
         results.append("Error loading JSON: {}".format(err))
 
     if len(results) == 0 and type == "cve":
-        v = Draft202012Validator(json50schema)
-        for validationError in sorted(v.iter_errors(json_data), key=str):
-            results.append("Schema validation of CVE record failed. The reason is likely one or more of those listed below:")
-            for suberror in sorted(validationError.context, key=lambda e: e.schema_path):
-                path = list(suberror.schema_path)
-                results.append("{}\n{}".format(suberror.message," / ".join(str(x) for x in path)))
+        schema_file = "{}/cve_{}.json".format(args.schema,json_data["dataVersion"])
+        if not os.path.exists(schema_file):
+            print("There is no schema file for data version '{}' in directory '{}', expected file is '{}'".format(json_data["dataVersion"], args.schema, schema_file), file=sys.stderr)
+            exit(255)
+        else:
+            schema = json.load(open(schema_file))
+        v = Draft7Validator(schema)
+        errors = sorted(v.iter_errors(json_data), key=lambda e: e.message)
+        #errors = sorted(v.iter_errors(json_data), key=str)
+        if errors:
+            error_str = "Schema validation of CVE record failed. The reason is likely one or more of those listed below:"
+            for error in errors:
+                for suberror in sorted(error.context, key=lambda e: e.schema_path) :
+                    error_str = "{}\n{} : {}".format(error_str, suberror.json_path, suberror.message)
+
+            #errors_str = "\n".join(e.message for e in errors)
+            results.append(error_str)
 
     # return results
     if len(results) == 0:
@@ -139,8 +150,8 @@ def file_name(file,json_data,args,type) :
     basename = os.path.basename(file)
 
     # Test name
-    if not re.match("^CVE\\-(199|2\\d\\d)\\d\\-\\d{4,}\\.json$",basename) :
-        results.append("Filename doesn't match the pattern \"CVE-\\d{4}\\-\\d{4,}\\.json")
+    if not re.match("^CVE\\-(199|2\\d{2})\\d\\-\\d{4,}\\.json$",basename) :
+        results.append("Filename doesn't match the pattern \"CVE-(199|2\\d{2})\\d\\-\\d{4,}\\.json")
 
     # Test ID
     try:
@@ -291,7 +302,7 @@ def advisory(file,json_data,args,type) :
         for ref in json_data["containers"]["cna"]["references"] :
             if "tags" in ref and len(ref["tags"]) > 0 :
                 for tag in ref["tags"]:
-                    if tag == "vendor-advisory" or "third-party-advisory":
+                    if tag == "vendor-advisory" or tag == "third-party-advisory":
                         found = True
         if not found :
             return False, "None of the references are tagged as a 'vendor-advisory' or 'third-party-advisory'"
@@ -392,7 +403,7 @@ if __name__ == '__main__':
     parser.add_argument('--list', action="count", default=0, help="list all checks and exit" )
     parser.add_argument('--min-reserved', type=int, metavar="N", default=0, help="Minimum number of reserved IDs for the current year" )
     parser.add_argument('--reserve', type=int, metavar="N", default=0, help="Reserve N new entries if reserved for this year is below minimum")
-    parser.add_argument('--schema', type=str, metavar="./cve50.json", default="./cve50.json", help="Path to the CVE json50 schema file")
+    parser.add_argument('--schema', type=str, metavar="./schemas", default="./schemas", help="Path to the directory containing the CVE json schema files")
     parser.add_argument('--include-reservations', action="store_true", default=False, help="Include reservations in our records")
     parser.add_argument('--reservations-path', type=str, metavar="./reservations", default="", help="path of directory for reservations")
     parser.add_argument('--create-missing', action="store_true", default=False, help="Create cve records from cve databazse when missing")
@@ -415,12 +426,8 @@ if __name__ == '__main__':
 
     skips=args.skip.split(",")
 
-    if os.path.exists(args.schema) :
-        f = open(args.schema)
-        json50schema = json.load(f)
-        f.close()
-    else:
-        print("Schema file does not exist",file=sys.stderr)
+    if not os.path.exists(args.schema) and os.path.isdir(args.schema) :
+        print("Schema directory '{}' does not exist".format(args.schema),file=sys.stderr)
         exit(255)
 
     if not os.path.exists(args.path) :
@@ -477,6 +484,7 @@ if __name__ == '__main__':
                     try:
                         f = open(filename)
                         json_data = json.load(f)
+                        #print("===\n{}\n---\n{}\n===\n".format(filename,json_data))
                         f.close()
                     except Exception as e:
                         out("File '{}' does not contain valid JSON. Not checking.\nError is: {}".format(filename,str(e)),2)
