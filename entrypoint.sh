@@ -108,7 +108,7 @@ git config --global --add safe.directory $PWD
 echo "*** Checking CVE records ***"
 rm -f /tmp/cve_check.log && touch /tmp/cve_check.log
 CVE_CHECK_FAILED=0
-CMD="/run/cve_check.py --path $CVE_PATH $IGNORE_CHECKS $MIN_RESERVED $RESERVE $RESERVATIONS_TOO $DO_RESERVATIONS $DO_MISSING $VERBOSE_FLAG --schema /run/schemas --log /tmp/cve_check.log"
+CMD="/run/cve_check.py --path $CVE_PATH $IGNORE_CHECKS $MIN_RESERVED $RESERVE $RESERVATIONS_TOO $DO_RESERVATIONS $DO_MISSING $VERBOSE_FLAG --log /tmp/cve_check.log"
 echo "Running: $CMD"
 $CMD || CVE_CHECK_FAILED=1
 

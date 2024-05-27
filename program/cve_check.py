@@ -4,11 +4,10 @@ import argparse
 import os
 import re
 import json
-from jsonschema import Draft7Validator
-from jsonschema.exceptions import best_match
 import datetime
 import sys
 from cvelib.cve_api import CveApi
+from cvelib.cve_api import CveRecord
 
 # General checks
 
@@ -119,23 +118,15 @@ def file_valid_json1(file,json_data,args,type) :
         results.append("Error loading JSON: {}".format(err))
 
     if len(results) == 0 and type == "cve":
-        schema_file = "{}/cve_{}.json".format(args.schema,json_data["dataVersion"])
-        if not os.path.exists(schema_file):
-            print("There is no schema file for data version '{}' in directory '{}', expected file is '{}'".format(json_data["dataVersion"], args.schema, schema_file), file=sys.stderr)
-            exit(255)
-        else:
-            schema = json.load(open(schema_file))
-        v = Draft7Validator(schema)
-        errors = sorted(v.iter_errors(json_data), key=lambda e: e.message)
-        #errors = sorted(v.iter_errors(json_data), key=str)
-        if errors:
-            error_str = "Schema validation of CVE record failed. The reason is likely one or more of those listed below:"
-            for error in errors:
-                for suberror in sorted(error.context, key=lambda e: e.schema_path) :
-                    error_str = "{}\n{} : {}".format(error_str, suberror.json_path, suberror.message)
-
-            #errors_str = "\n".join(e.message for e in errors)
-            results.append(error_str)
+        if "containers" in json_data and "cna" in json_data["containers"]:
+            try:
+                CveRecord.validate(json_data["containers"]["cna"])
+            except Exception as e:
+                error_str="Schema validation of CVE record failed\n--------------------------------------"
+                for error in e.errors:
+                    jpath = error.json_path.replace("$","$.containers.cna")
+                    error_str = "{}\n{} -> {}".format(error_str,jpath,error.message)
+                results.append(error_str)
 
     # return results
     if len(results) == 0:
@@ -403,7 +394,6 @@ if __name__ == '__main__':
     parser.add_argument('--list', action="count", default=0, help="list all checks and exit" )
     parser.add_argument('--min-reserved', type=int, metavar="N", default=0, help="Minimum number of reserved IDs for the current year" )
     parser.add_argument('--reserve', type=int, metavar="N", default=0, help="Reserve N new entries if reserved for this year is below minimum")
-    parser.add_argument('--schema', type=str, metavar="./schemas", default="./schemas", help="Path to the directory containing the CVE json schema files")
     parser.add_argument('--include-reservations', action="store_true", default=False, help="Include reservations in our records")
     parser.add_argument('--reservations-path', type=str, metavar="./reservations", default="", help="path of directory for reservations")
     parser.add_argument('--create-missing', action="store_true", default=False, help="Create cve records from cve databazse when missing")
@@ -425,10 +415,6 @@ if __name__ == '__main__':
         exit(0)
 
     skips=args.skip.split(",")
-
-    if not os.path.exists(args.schema) and os.path.isdir(args.schema) :
-        print("Schema directory '{}' does not exist".format(args.schema),file=sys.stderr)
-        exit(255)
 
     if not os.path.exists(args.path) :
         print("Path '{}' does not exist".format(args.path),file=sys.stderr)
