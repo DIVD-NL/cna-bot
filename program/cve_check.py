@@ -4,8 +4,6 @@ import argparse
 import os
 import re
 import json
-from jsonschema import Draft7Validator
-from jsonschema.exceptions import best_match
 import datetime
 import sys
 from cvelib.cve_api import CveApi
@@ -124,9 +122,10 @@ def file_valid_json1(file,json_data,args,type) :
             try:
                 CveRecord.validate(json_data["containers"]["cna"])
             except Exception as e:
-                error_str="Schema validation of CVE record failed."
+                error_str="Schema validation of CVE record failed\n--------------------------------------"
                 for error in e.errors:
-                    error_str = "{}\n{}\n\n---".format(error_str,error)
+                    jpath = error.json_path.replace("$","$.containers.cna")
+                    error_str = "{}\n{} -> {}".format(error_str,jpath,error.message)
                 results.append(error_str)
 
     # return results
@@ -395,7 +394,6 @@ if __name__ == '__main__':
     parser.add_argument('--list', action="count", default=0, help="list all checks and exit" )
     parser.add_argument('--min-reserved', type=int, metavar="N", default=0, help="Minimum number of reserved IDs for the current year" )
     parser.add_argument('--reserve', type=int, metavar="N", default=0, help="Reserve N new entries if reserved for this year is below minimum")
-    parser.add_argument('--schema', type=str, metavar="./schemas", default="./schemas", help="Path to the directory containing the CVE json schema files")
     parser.add_argument('--include-reservations', action="store_true", default=False, help="Include reservations in our records")
     parser.add_argument('--reservations-path', type=str, metavar="./reservations", default="", help="path of directory for reservations")
     parser.add_argument('--create-missing', action="store_true", default=False, help="Create cve records from cve databazse when missing")
@@ -417,10 +415,6 @@ if __name__ == '__main__':
         exit(0)
 
     skips=args.skip.split(",")
-
-    if not os.path.exists(args.schema) and os.path.isdir(args.schema) :
-        print("Schema directory '{}' does not exist".format(args.schema),file=sys.stderr)
-        exit(255)
 
     if not os.path.exists(args.path) :
         print("Path '{}' does not exist".format(args.path),file=sys.stderr)
