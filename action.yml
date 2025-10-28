@@ -66,6 +66,9 @@ inputs:
   debug :
     description: 'Most verbose output'
     default: false
+  skip-cve-lint :
+    description: 'Skip running cvelint validation (default: false)'
+    default: false
 
 runs:
   using: 'docker'
@@ -91,3 +94,4 @@ runs:
     VERBOSE :               ${{ inputs.verbose }}
     QUIET :                 ${{ inputs.quiet }}
     DEBUG:                  ${{ inputs.debug }}
+    SKIP_CVE_LINT :         ${{ inputs.skip-cve-lint }}
