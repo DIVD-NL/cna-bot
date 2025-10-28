@@ -17,6 +17,7 @@
 #    RESERVATIONS_PATH :     ${{ inputs.reservations-path }}
 #    CREATE_MISSING : 	     ${{ inpouts.create-missing }}
 #    EXPIRE_AFTER :          ${{ inputs.expire-after }}
+#    SKIP_CVE_LINT :        ${{ inputs.skip-cve-lint }}
 
 
 
