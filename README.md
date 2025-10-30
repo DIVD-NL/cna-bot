@@ -74,6 +74,11 @@ Set to true to increase the output levels. (Defaults to `false`)
 Set to true to output only the minimul output. (Defaults to `false`)
 If both `verbose` and `quiet` are set, `quiet` wins
 
+### `skip-cve-lint`
+
+Set to `true` to skip running cvelint validation checks. (Defaults to `false`)
+This is useful when you want to bypass the cvelint validation step, for example during testing or when using custom validation workflows.
+
 ## Versions
 
 For the stable version use `DIVD-NL/cna-bot@v1` (recommended)

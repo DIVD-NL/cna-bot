@@ -17,6 +17,7 @@
 #    RESERVATIONS_PATH :     ${{ inputs.reservations-path }}
 #    CREATE_MISSING : 	     ${{ inpouts.create-missing }}
 #    EXPIRE_AFTER :          ${{ inputs.expire-after }}
+#    SKIP_CVE_LINT :        ${{ inputs.skip-cve-lint }}
 
 
 
@@ -112,13 +113,17 @@ CMD="/run/cve_check.py --path $CVE_PATH $IGNORE_CHECKS $MIN_RESERVED $RESERVE $R
 echo "Running: $CMD"
 $CMD || CVE_CHECK_FAILED=1
 
-echo "*** Checking CVE records with cvelint ***"
 CVELINT_FAILED=0
-CMD="/run/cvelint $CVE_PATH"
-echo "Running: $CMD"
-$CMD | tee /tmp/cvelint.log
-if [[ $(grep "Found 0 errors." /tmp/cvelint.log | wc -l ) -ne 1 ]]; then
-	CVELINT_FAILED=1
+if [[ "$SKIP_CVE_LINT" != "true" ]]; then
+	echo "*** Checking CVE records with cvelint ***"
+	CMD="/run/cvelint $CVE_PATH"
+	echo "Running: $CMD"
+	$CMD | tee /tmp/cvelint.log
+	if [[ $(grep "Found 0 errors." /tmp/cvelint.log | wc -l ) -ne 1 ]]; then
+		CVELINT_FAILED=1
+	fi
+else
+	echo "*** Skipping cvelint check (skip-cve-lint is enabled) ***"
 fi
 
 if [[ ! -z "${GITHUB_TOKEN}" ]]; then
