@@ -203,14 +203,43 @@ if __name__ == '__main__':
             for file in files:
                 if file== "reservations.lock" :
                     filename = os.path.join(root,file)
+                    altered = False
+                    content = []
                     with open(filename) as lf:
                         for line in lf.readlines() :
                             result = re.search(r"^\s*(CVE\-\d{4}\-\d{4,})?\s*(\#.*)?$", line)
                             if result :
                                 if result.group(1):
                                     locked.append(result.group(1))
+                                    content.append(line)
                             else:
-                                print("Incorrect line in '{}' ignored:\n{}".format(filename, line))
+                                result = re.search(r"^(\s*)(NEW\-CVE(S?)-(\d{4})(\-(\d+))?(\s*(\#.*)?))$", line)
+                                if result :
+                                    year = result.group(4)
+                                    # We need to make a reservation
+                                    if result.group(3) == "S":
+                                        number = int(result.group(6))
+                                    else:
+                                        number = 1
+                                    if number > 0 :
+                                        print("We need to make {} reservations for year {}: {}".format(number, year, line))
+                                        altered = True
+
+                                        json_result = cve_api.reserve(number, False, year)
+                                        for record in json_result["cve_ids"] :
+                                            print(record)
+                                            cve_id = record["cve_id"]
+                                            reserved[cve_id] = record
+                                            write_json_file("{}/{}.json".format(root,record["cve_id"]),reserved[cve_id])
+                                            locked.append(cve_id) # Lock the record
+                                            content.append("{}{}{}\n".format(result.group(1),cve_id,result.group(7)))
+                                else:
+                                    print("Incorrect line in '{}' ignored:\n{}".format(filename, line))
+                                    content.append(line)
+                        if altered:
+                            with open(filename, "w") as lfw:
+                                for line in content:
+                                    print(line, end="", file=lfw)
 
         # First local files
         for root, dirs, files in os.walk(args.reservations_path):
