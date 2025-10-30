@@ -91,7 +91,7 @@ See: https://github.com/DIVD-NL/cna-admin-test
 
 In this repo the CVE records are in `./records` and it has this workflow configuration
 
-```
+```yml
 # test_and_update_cve_records.yml
 on:
   push:
@@ -131,6 +131,54 @@ jobs:
 
 ```
 
+### Usage with a GitHub App
+
+Instead of using a Personal Access Token, a GitHub App can be used. This is
+advantagus since all the pull requests are created in the name of the App and
+not a personal account.
+
+**Steps:**
+
+1. [Register new GitHub App](https://docs.github.com/apps/creating-github-apps/setting-up-a-github-app/creating-a-github-app)
+2. [Store the App's ID in your repository environment variables](https://docs.github.com/actions/learn-github-actions/variables#defining-configuration-variables-for-multiple-workflows) (example: `APP_ID`)
+3. [Store the App's private key in your repository secrets](https://docs.github.com/actions/security-guides/encrypted-secrets?tool=webui#creating-encrypted-secrets-for-a-repository) (example: `PRIVATE_KEY`)
+4. [Install the App for your Organization](https://docs.github.com/en/apps/using-github-apps/installing-your-own-github-app)
+
+```yml
+# test_and_update_cve_records.yml
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    branches:
+      - 'main'
+  schedule:
+    - cron: "5 4 * * *" #  This should be changed to another cron value.
+
+
+jobs:
+  test_and_update_cve_records:
+    runs-on: ubuntu-latest
+    steps:
+      # Get the repository's code
+      - name: Checkout
+        uses: actions/checkout@v3
+      # Request Token via App Credentials
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+      # Check CVE records and publish them
+      - name: CVE RSUS check and upload
+        uses: DIVD-NL/cna-bot@v1
+        with:
+          # ...
+          github-token: ${{ steps.app-token.outputs.token }} # Use token from `app-token` step
+
+```
+
 ## reservations.lock
 
 You can create a this file to exclude CVE ID reservations from automatic expiry. You can create one or more of these files anywhere in the `reservations-path`. You must include one CVE ID per line and `#` style comments are allowed.
@@ -138,7 +186,7 @@ You can create a this file to exclude CVE ID reservations from automatic expiry.
 You can also use this file for some local administration.
 
 E.g.
-```
+```yml
 # reservations.lock
 
 # DIVD-2010-00001
@@ -156,7 +204,7 @@ I will explain each part of the workflow, in detail
 
 
 We will run this workflow on pull requests agains main and on pushes to the main branch and run at 4:05 at night.
-```
+```yml
 # test_and_update_cve_records.yml
 on:
   push:
@@ -171,7 +219,7 @@ on:
 
 The we need to check out the code
 
-```
+```yml
 jobs:
   test_and_update_cve_records:
     runs-on: ubuntu-latest
@@ -179,12 +227,12 @@ jobs:
       # Get the repository's code
       - name: Checkout
         uses: actions/checkout@v2
-```
+```yml
 
 After the code is checkout out, we are going to test the CVE records
 
 
-```
+```yml
       # Check CVE records and publish them    
       - name: CVE RSUS check and upload
         uses: DIVD-NL/cna-bot@v1
@@ -193,7 +241,7 @@ After the code is checkout out, we are going to test the CVE records
 The iputs that start with cve- are our CVE credentials to log in. We suggest you store these in your github secrets
 
 
-```
+```yml
         with: 
           cve-user        : ${{ secrets.CVE_USER }}
           cve-org         : ${{ secrets.CVE_ORG }}
@@ -202,36 +250,36 @@ The iputs that start with cve- are our CVE credentials to log in. We suggest you
 ```
 
 Next we want to instruct the action to only publish.update records if we have merged them into main.
-```
+```yml
           publish         : ${{ github.ref == 'refs/heads/main' }}    # Only publish when we merge into the main branch
 ```
 
 We need to tell the action where our records live.
-```
+```yml
           path            : records/                                  # This is where the CVE records live
 ```
 
 With this option we can ignore certain check, e.g. set it to `published_in_path` if you don't wat to check that each published CVE has a record in this directory.
-```
+```yml
           ignore          : ""                                        # Don't ignore any checks
 ```
 
 These to items control CVE record reservation. `min-reserved` sets the minimum number of available CVE records for the (current) year. If the number of reserved records drops below this threshold the action will fail, or reserve more CVE IDs depending on the setting of `reserve`.
 If `reserve` is set to a positive number, the action will reserve this number of records. If more records are needed to go back the the minimum, this ammount will be reserved instead.
-```
+```yml
           min-reserved    : 10                                        # Keep at least 10 reserved records (for the current year)
           reserve         : 10                                        # Reserve a minimum of 10 records at a time 
 ```
 
 If the remote record does not match the local record, create a pull reuqest to update the local records. These changes should mostly be about metadata.
-```
+```yml
           pr              : ${{ github.event_name != 'pull_request' }}  # Create a PR when we push or run on schedule
           github-token:     ${{ secrets.GITHUB_TOKEN }}          
 ```
 
 Note: If you want github actions to run on pull requests created by this action you will have to use a personal Github Access token with at least the `repo`, `org:read` and `discussion:read` scopes.
 
-```
+```yml
           expire-after    : "1y"
 ```
 If we have reservations of 1 year before last year, in the state `RESERVED`, then automatically create a pull-request to set them to `REJECTED`.
