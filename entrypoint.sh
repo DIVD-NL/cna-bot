@@ -119,7 +119,11 @@ if [[ "$SKIP_CVE_LINT" != "true" ]]; then
 	CMD="/run/cvelint $CVE_PATH"
 	echo "Running: $CMD"
 	$CMD | tee /tmp/cvelint.log
-	if [[ $(grep "Found 0 errors." /tmp/cvelint.log | wc -l ) -ne 1 ]]; then
+	# CVELINT is error free if it either finds 0 errors or if it has no records to check (e.g. because this is the first run)
+	if [[
+		$(grep "Found 0 errors." /tmp/cvelint.log | wc -l ) -ne 1 &&
+		$(grep "no CVE record JSON files found" | wc -l ) -ne 1
+	]]; then
 		CVELINT_FAILED=1
 	fi
 else
