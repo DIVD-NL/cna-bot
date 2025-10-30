@@ -181,12 +181,32 @@ jobs:
 
 ## reservations.lock
 
-You can create a this file to exclude CVE ID reservations from automatic expiry. You can create one or more of these files anywhere in the `reservations-path`. You must include one CVE ID per line and `#` style comments are allowed.
+The `reservations.lock` file can be used to make sure reservations don't expire and to reserve CVE records. You can also use if for local administration.
+
+### Preventing expiration
+
+You can CVE ID reservations from automatic expiry to do this you can create one or more `reservation.lock` files anywhere in the `reservations-path`. You must include one CVE ID per line and `#` style comments are allowed.
+
+### Reserving new CVE ids
+
+In order to reserve a record you can add special lines to the `reservations.lock` file. E.g.
+
+```
+NEW-CVE-2024     # Reserves a single CVE id in the year 2024
+NEW-CVES-2025-12 # Reserves a sequential block of 12 CVEs for 2025
+```
+
+When these lines are encountered a number of things will happen
+* The number of records in the year will be requested via the CVE services api
+* Reservation records will we written in the same directory the `reservations.lock` file is in
+* The `reservations.lock` file will be updated to contain the newly reserved CVE IDs
+
+### Local administration
 
 You can also use this file for some local administration.
 
 E.g.
-```yml
+```
 # reservations.lock
 
 # DIVD-2010-00001
@@ -198,6 +218,7 @@ CVE-2010-66667  # Ticket: 1246
 CVE-2010-66668  # Ticket: 1249
 CVE-2010-66669  # Ticket: 1250
 ```
+
 
 ## Detailed explanation
 I will explain each part of the workflow, in detail
