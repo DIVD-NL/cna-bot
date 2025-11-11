@@ -36,16 +36,6 @@ Path to find CVE ID reservations in. Any \*.json file in this directory is consi
 
 Comma separted list of checks to ignore.
 
-### `min-reserved`
-
-Minimum number of reserved records for the current year.
-
-Action will fail if the number of records in RESERVED state drops below this amount. If `reserve` is set to a number above 0 this action will reserve this many new records.
-
-### `reserve`
-
-Minimum number of records to reserve in one go (0=do not make reservations)
-
 ### `pr`
 
 Create a pull request to bring local records in line with remote records (defaults to `false`)
@@ -56,6 +46,16 @@ A github token to be used by this action. Default ` `. Recommended value: ${{ se
 
 If you want github actions to run on pull requests created by this action you will have to use a personal Github Access token with at least the `repo` and `org:read` scopes and grant the bot write access to the repo.
 
+### `reserve`
+
+Minimum number of records to reserve in one go (0=do not make reservations). This parameter defaults to 0 because maintaining a "stockpile" of CVE IDs is discouraged.
+
+### `min-reserved`
+
+Minimum number of reserved records for the current year.
+
+Action will fail if the number of records in RESERVED state drops below this amount. If `reserve` is set to a number above 0 this action will reserve this many new records.
+
 ### `expire-after`
 
 Create pull request (if `pr` is set to `true`) to expire reservations this much time after the end of the year.
@@ -65,6 +65,11 @@ Example values are:
 * `2m` for 2 months, reservations will expire on or after 1 Mar
 * `1y` for 1 year, reserveration will expire on or after 1 Jan for reservations before the previous year
 
+### `skip-cve-lint`
+
+Set to `true` to skip running cvelint validation checks. (Defaults to `false`)
+This is useful when you want to bypass the cvelint validation step, for example during testing or when using custom validation workflows.
+
 ### `verbose`
 
 Set to true to increase the output levels. (Defaults to `false`)
@@ -73,11 +78,6 @@ Set to true to increase the output levels. (Defaults to `false`)
 
 Set to true to output only the minimul output. (Defaults to `false`)
 If both `verbose` and `quiet` are set, `quiet` wins
-
-### `skip-cve-lint`
-
-Set to `true` to skip running cvelint validation checks. (Defaults to `false`)
-This is useful when you want to bypass the cvelint validation step, for example during testing or when using custom validation workflows.
 
 ## Versions
 
@@ -123,8 +123,8 @@ jobs:
           path              : records                                     # This is where the CVE records live
           reservations-path : records/reservations                        # This is where reservation CVE IDs live
           ignore            : ""                                          # Don't ignore any checks
-          min-reserved      : 10                                          # Keep at least 10 reserved records (for the current year)
-          reserve           : 10                                          # Reserve a minimum of 10 records at a time 
+          min-reserved      : 0                                           # Don't pre-reserve records
+          reserve           : 0                                           # Don't pre-reserve records 
           pr                : ${{ github.event_name != 'pull_request' }}  # Create a PR when we push or run on schedule
           github-token      : ${{ secrets.GITHUB_TOKEN }}          
           expire-after      : "1y"
@@ -181,12 +181,32 @@ jobs:
 
 ## reservations.lock
 
-You can create a this file to exclude CVE ID reservations from automatic expiry. You can create one or more of these files anywhere in the `reservations-path`. You must include one CVE ID per line and `#` style comments are allowed.
+The `reservations.lock` file can be used to make sure reservations don't expire and to reserve CVE records. You can also use if for local administration.
+
+### Preventing expiration
+
+You can CVE ID reservations from automatic expiry to do this you can create one or more `reservation.lock` files anywhere in the `reservations-path`. You must include one CVE ID per line and `#` style comments are allowed.
+
+### Reserving new CVE ids
+
+In order to reserve a record you can add special lines to the `reservations.lock` file. E.g.
+
+```
+NEW-CVE-2024     # Reserves a single CVE id in the year 2024
+NEW-CVES-2025-12 # Reserves a sequential block of 12 CVEs for 2025
+```
+
+When these lines are encountered a number of things will happen
+* The number of records in the year will be requested via the CVE services api
+* Reservation records will we written in the same directory the `reservations.lock` file is in
+* The `reservations.lock` file will be updated to contain the newly reserved CVE IDs
+
+### Local administration
 
 You can also use this file for some local administration.
 
 E.g.
-```yml
+```
 # reservations.lock
 
 # DIVD-2010-00001
@@ -198,6 +218,7 @@ CVE-2010-66667  # Ticket: 1246
 CVE-2010-66668  # Ticket: 1249
 CVE-2010-66669  # Ticket: 1250
 ```
+
 
 ## Detailed explanation
 I will explain each part of the workflow, in detail
@@ -264,23 +285,26 @@ With this option we can ignore certain check, e.g. set it to `published_in_path`
           ignore          : ""                                        # Don't ignore any checks
 ```
 
-These to items control CVE record reservation. `min-reserved` sets the minimum number of available CVE records for the (current) year. If the number of reserved records drops below this threshold the action will fail, or reserve more CVE IDs depending on the setting of `reserve`.
-If `reserve` is set to a positive number, the action will reserve this number of records. If more records are needed to go back the the minimum, this ammount will be reserved instead.
-```yml
-          min-reserved    : 10                                        # Keep at least 10 reserved records (for the current year)
-          reserve         : 10                                        # Reserve a minimum of 10 records at a time 
-```
 
-If the remote record does not match the local record, create a pull reuqest to update the local records. These changes should mostly be about metadata.
+If the remote record does not match the local record, create a pull reuqest to update the local records. These changes should mostly be about metadata and to incorporate CVE ID reservations into your repo.
 ```yml
           pr              : ${{ github.event_name != 'pull_request' }}  # Create a PR when we push or run on schedule
           github-token:     ${{ secrets.GITHUB_TOKEN }}          
 ```
 
-Note: If you want github actions to run on pull requests created by this action you will have to use a personal Github Access token with at least the `repo`, `org:read` and `discussion:read` scopes.
+Note: If you want github actions to run on pull requests created by this action you will have to use either a personal Github Access token or a GitHub app token with at least the `repo`, `org:read` and `discussion:read` scopes.
+
+The parameters below control CVE record pre-reservation. `min-reserved` sets the minimum number of available CVE records to keep in stock for the (current) year. If the number of reserved records drops below this threshold the action will fail, or reserve more CVE IDs depending on the setting of `reserve`.
+If `reserve` is set to a positive number, the action will reserve this number of records. If more records are needed to go back the the minimum, this ammount will be reserved instead.
+
+
+```yml
+          min-reserved      : 0                                           # Don't pre-reserve records
+          reserve           : 0                                           # Don't pre-reserve records
+```
+Please note: pre-reservation of records is *not considered best practise*. These values are set to 0 by default. Instead use the `NEW-CVE-yyyy` or `NEW-CVES-yyyy-nn` syntax in `reservation.lock` files for just in time reservation of records.
 
 ```yml
           expire-after    : "1y"
 ```
 If we have reservations of 1 year before last year, in the state `RESERVED`, then automatically create a pull-request to set them to `REJECTED`.
-.
