@@ -1,3 +1,4 @@
+**sai.net@a.sai.com//.
 # CNA Bot
 
 This GitHub action validates CVE JSON 5.0 format records and (optionally) submits them to the CVE RSUS service.
