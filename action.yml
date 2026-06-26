@@ -34,6 +34,9 @@ inputs:
   reserve:
     description: 'Minimum number of records to reserve in one go (0=do not make reservations)'
     default: 0
+  exclude-locked:
+    description: 'Exclude reservations listed in reservations.lock files from the min-reserved count'
+    default: false
   pr:
     description: 'Create a PR to bring local records in line with remote records.'
     default: false
@@ -92,6 +95,7 @@ runs:
     IGNORE_CHECKS :         ${{ inputs.ignore }}
     MIN_RESERVED :          ${{ inputs.min-reserved }}
     RESERVE :               ${{ inputs.reserve }}
+    EXCLUDE_LOCKED :        ${{ inputs.exclude-locked }}
     DO_PR :                 ${{ inputs.pr }}
     UPDATE_LOCAL_INPUT :    ${{ inputs.update-local }}
     INCLUDE_RESERVATIONS :  ${{ inputs.check-reservations }}

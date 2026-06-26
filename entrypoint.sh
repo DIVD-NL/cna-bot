@@ -12,6 +12,7 @@
 #    IGNORE_CHECKS :         ${{ inputs.ignore }}
 #    MIN_RESERVED :          ${{ inputs.min-reserved }}
 #    RESERVE :     		     ${{ inputs.reserve }}
+#    EXCLUDE_LOCKED :        ${{ inputs.exclude-locked }}
 #    DO_PR :                 ${{ inputs.pr }}
 #    UPDATE_LOCAL_INPUT :    ${{ inputs.update-local }}
 #    INCLUDE_RESERVATIONS :  ${{ inputs.check-reservations }}
@@ -57,6 +58,11 @@ if [[ "$MIN_RESERVED" != "" ]]; then
 fi
 if [[ "$RESERVE" != "" ]]; then
 	RESERVE="--reserve $RESERVE"
+fi
+if [[ "$EXCLUDE_LOCKED" == "true" ]]; then
+	EXCLUDE_LOCKED="--exclude-locked"
+else
+	EXCLUDE_LOCKED=""
 fi
 
 # Update local records to match remote state. When update-local is not
@@ -120,7 +126,7 @@ git config --global --add safe.directory $PWD
 echo "*** Checking CVE records ***"
 rm -f /tmp/cve_check.log && touch /tmp/cve_check.log
 CVE_CHECK_FAILED=0
-CMD="/run/cve_check.py --path $CVE_PATH $IGNORE_CHECKS $MIN_RESERVED $RESERVE $RESERVATIONS_TOO $DO_RESERVATIONS $DO_MISSING $VERBOSE_FLAG --log /tmp/cve_check.log"
+CMD="/run/cve_check.py --path $CVE_PATH $IGNORE_CHECKS $MIN_RESERVED $RESERVE $EXCLUDE_LOCKED $RESERVATIONS_TOO $DO_RESERVATIONS $DO_MISSING $VERBOSE_FLAG --log /tmp/cve_check.log"
 echo "Running: $CMD"
 $CMD || CVE_CHECK_FAILED=1
 

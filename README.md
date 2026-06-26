@@ -62,6 +62,10 @@ Minimum number of reserved records for the current year.
 
 Action will fail if the number of records in RESERVED state drops below this amount. If `reserve` is set to a number above 0 this action will reserve this many new records.
 
+### `exclude-locked`
+
+When set to `true`, CVE IDs listed in `reservations.lock` files are excluded from the `min-reserved` count. Locked reservations are treated as spoken for, so the minimum applies to the pool of unlocked reservations. Defaults to `false`, in which case locked reservations count towards the minimum just like any other RESERVED record.
+
 ### `expire-after`
 
 Create pull request (if `pr` is set to `true`) to expire reservations this much time after the end of the year.

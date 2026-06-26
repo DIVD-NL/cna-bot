@@ -11,6 +11,21 @@ from cvelib.cve_api import CveRecord
 
 # General checks
 
+def locked_reservations(args) :
+    # Collect CVE IDs that are listed in reservations.lock files
+    locked = set()
+    if not os.path.exists(args.reservations_path) :
+        return locked
+    for root, dirs, files in os.walk(args.reservations_path):
+        for file in files:
+            if file == "reservations.lock" :
+                with open(os.path.join(root, file)) as lf:
+                    for line in lf.readlines() :
+                        result = re.search(r"^\s*(CVE\-\d{4}\-\d{4,})?\s*(\#.*)?$", line)
+                        if result and result.group(1) :
+                            locked.add(result.group(1))
+    return locked
+
 def minimum_reserved(args) :
     global cves
     # Check if we have have the minimum number of CVE IDs reserved
@@ -19,9 +34,14 @@ def minimum_reserved(args) :
     if args.min_reserved > 0:
         year = datetime.date.today().year
         num_reserved = 0
+        # Locked reservations may be spoken for and excluded from the minimum
+        if args.exclude_locked:
+            locked = locked_reservations(args)
+        else:
+            locked = set()
         reserved = []
         for cve in cves:
-            if cve["state"] == "RESERVED" and cve["cve_year"] == str(year) :
+            if cve["state"] == "RESERVED" and cve["cve_year"] == str(year) and cve["cve_id"] not in locked :
                 reserved.append(cve)
         if len(reserved) < args.min_reserved:
             if args.reserve > 0:
@@ -394,6 +414,7 @@ if __name__ == '__main__':
     parser.add_argument('--list', action="count", default=0, help="list all checks and exit" )
     parser.add_argument('--min-reserved', type=int, metavar="N", default=0, help="Minimum number of reserved IDs for the current year" )
     parser.add_argument('--reserve', type=int, metavar="N", default=0, help="Reserve N new entries if reserved for this year is below minimum")
+    parser.add_argument('--exclude-locked', action="store_true", default=False, help="Exclude reservations listed in reservations.lock files from the min-reserved count")
     parser.add_argument('--include-reservations', action="store_true", default=False, help="Include reservations in our records")
     parser.add_argument('--reservations-path', type=str, metavar="./reservations", default="", help="path of directory for reservations")
     parser.add_argument('--create-missing', action="store_true", default=False, help="Create cve records from cve databazse when missing")
