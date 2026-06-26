@@ -37,6 +37,9 @@ inputs:
   pr:
     description: 'Create a PR to bring local records in line with remote records.'
     default: false
+  update-local:
+    description: 'Update local records/reservations to match remote state. Defaults to the value of `pr` when left empty, so set it to `true` to update local files without creating a PR.'
+    default: ''
   github-token :
     description: 'Github token, usually automatically provided via `secrets.GITHUB_TOKEN`, required when pr is set to `true`'
   github-branch :
@@ -87,6 +90,7 @@ runs:
     MIN_RESERVED :          ${{ inputs.min-reserved }}
     RESERVE :               ${{ inputs.reserve }}
     DO_PR :                 ${{ inputs.pr }}
+    UPDATE_LOCAL_INPUT :    ${{ inputs.update-local }}
     INCLUDE_RESERVATIONS :  ${{ inputs.check-reservations }}
     RESERVATIONS_PATH :     ${{ inputs.reservations-path }}
     CREATE_MISSING :        ${{ inputs.create-missing }}

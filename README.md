@@ -40,6 +40,12 @@ Comma separted list of checks to ignore.
 
 Create a pull request to bring local records in line with remote records (defaults to `false`)
 
+### `update-local`
+
+Update local records and reservations to match the remote state (e.g. writing back server-populated metadata).
+
+When left empty this defaults to the value of `pr`, preserving the previous behavior. Set it to `true` to update the local files without creating a pull request, for example if you want to create the PR yourself in a later step. (Defaults to the value of `pr`)
+
 ### `github-token`
 
 A github token to be used by this action. Default ` `. Recommended value: ${{ secrets.GITHUB_TOKEN }}

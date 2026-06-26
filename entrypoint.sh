@@ -13,6 +13,7 @@
 #    MIN_RESERVED :          ${{ inputs.min-reserved }}
 #    RESERVE :     		     ${{ inputs.reserve }}
 #    DO_PR :                 ${{ inputs.pr }}
+#    UPDATE_LOCAL_INPUT :    ${{ inputs.update-local }}
 #    INCLUDE_RESERVATIONS :  ${{ inputs.check-reservations }}
 #    RESERVATIONS_PATH :     ${{ inputs.reservations-path }}
 #    CREATE_MISSING : 	     ${{ inpouts.create-missing }}
@@ -57,7 +58,12 @@ if [[ "$RESERVE" != "" ]]; then
 	RESERVE="--reserve $RESERVE"
 fi
 
-if [[ "$DO_PR" == "true" ]]; then
+# Update local records to match remote state. When update-local is not
+# explicitly set, it defaults to the value of pr (the previous behavior).
+if [[ -z "$UPDATE_LOCAL_INPUT" ]]; then
+	UPDATE_LOCAL_INPUT="$DO_PR"
+fi
+if [[ "$UPDATE_LOCAL_INPUT" == "true" ]]; then
 	UPDATE_LOCAL="--update-local"
 fi
 
