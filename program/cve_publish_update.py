@@ -143,6 +143,18 @@ if __name__ == '__main__':
                         else:
                             print(result["message"])
                             created=created+1
+                            # Publishing populates server-side fields (e.g. datePublished,
+                            # providerMetadata). Read them back so the local record reflects
+                            # the new state in the same run instead of on the next one.
+                            if args.update_local :
+                                cve_record = cve_api.show_cve_record(cve_id)
+                                diff = DeepDiff(
+                                    cve_record,
+                                    json_data
+                                )
+                                if diff != {} :
+                                    write_json_file(filename, cve_record)
+                                    print("Updated local records of {} with remote (meta-)data.".format(cve_id))
 
 
                     if file_valid and cve_metadata["state"] == "PUBLISHED" and json_data["cveMetadata"]["state"] == "PUBLISHED":
