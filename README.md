@@ -71,6 +71,13 @@ Example values are:
 * `2m` for 2 months, reservations will expire on or after 1 Mar
 * `1y` for 1 year, reserveration will expire on or after 1 Jan for reservations before the previous year
 
+### `delete-rejected`
+
+Controls what happens to the local file of a reservation that is rejected (either explicitly, or because it expired via `expire-after`).
+
+* `false` (default): keep the local file and set its state to `REJECTED`.
+* `true`: delete the local file instead.
+
 ### `skip-cve-lint`
 
 Set to `true` to skip running cvelint validation checks. (Defaults to `false`)

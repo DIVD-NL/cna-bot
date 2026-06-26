@@ -18,6 +18,7 @@
 #    RESERVATIONS_PATH :     ${{ inputs.reservations-path }}
 #    CREATE_MISSING : 	     ${{ inpouts.create-missing }}
 #    EXPIRE_AFTER :          ${{ inputs.expire-after }}
+#    DELETE_REJECTED :       ${{ inputs.delete-rejected }}
 #    SKIP_CVE_LINT :        ${{ inputs.skip-cve-lint }}
 
 
@@ -90,6 +91,10 @@ if [[ $( echo $RESERVATIONS_PATH | egrep "^\/" | wc -l ) -gt 0 ]] ; then
 fi
 if [[ ! -z "$EXPIRE_AFTER" ]]; then
 	EXPIRE="--expire-after $EXPIRE_AFTER"
+fi
+
+if [[ "$DELETE_REJECTED" == "true" ]]; then
+	DELETE_REJECTED_FLAG="--delete-rejected"
 fi
 
 if [[ "$QUIET" == "true" ]]; then
@@ -185,7 +190,7 @@ fi
 if [[ "$CVE_PUBLISH" == "true" ]]; then
 	echo
 	echo "*** Publishing/updating CVE records ***"
-	CMD="/run/cve_publish_update.py --path $CVE_PATH $UPDATE_LOCAL $RESERVATIONS_TOO $DO_RESERVATIONS $EXPIRE"
+	CMD="/run/cve_publish_update.py --path $CVE_PATH $UPDATE_LOCAL $RESERVATIONS_TOO $DO_RESERVATIONS $EXPIRE $DELETE_REJECTED_FLAG"
 	echo "Running: $CMD"
 	$CMD | tee /tmp/publish.log
 

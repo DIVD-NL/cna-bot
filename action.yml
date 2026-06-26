@@ -60,6 +60,9 @@ inputs:
   expire-after:
     description: 'Create PR to expire reservations this much time after the end of the year (e.g 4d, 3w, 2m or 1y)'
     default: ''
+  delete-rejected:
+    description: 'Delete the local file of a rejected reservation instead of keeping it with state REJECTED (default: false)'
+    default: false
   verbose :
     description: 'Verbose output'
     default: false
@@ -95,6 +98,7 @@ runs:
     RESERVATIONS_PATH :     ${{ inputs.reservations-path }}
     CREATE_MISSING :        ${{ inputs.create-missing }}
     EXPIRE_AFTER :          ${{ inputs.expire-after }}
+    DELETE_REJECTED :       ${{ inputs.delete-rejected }}
     VERBOSE :               ${{ inputs.verbose }}
     QUIET :                 ${{ inputs.quiet }}
     DEBUG:                  ${{ inputs.debug }}

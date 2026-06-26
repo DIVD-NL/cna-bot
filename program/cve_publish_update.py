@@ -47,6 +47,7 @@ if __name__ == '__main__':
     parser.add_argument('--include-reservations', action="store_true", default=False, help="Include reservations")
     parser.add_argument('--reservations-path', type=str, metavar=".", default="", help="path of directory to check")
     parser.add_argument('--expire-after', type=str, metavar="3M", default="", help="Expire reservations time much after the year has expired via a pull-request, date can be specified as w.g. 30d, 3w, 2m or 1y (default: don't expire)")
+    parser.add_argument('--delete-rejected', action="store_true", default=False, help="Delete the local file of a rejected reservation instead of keeping it with state REJECTED")
 
     args = parser.parse_args()
 
@@ -296,7 +297,7 @@ if __name__ == '__main__':
                         reserved[cve_id]["state"] = "REJECTED"
                         updated=updated+1
 
-                    if file_valid and args.update_local :
+                    if file_valid and args.update_local and not (args.delete_rejected and reserved[cve_id]["state"] == "REJECTED") :
                         diff = DeepDiff(
                             reserved[cve_id],
                             json_data
@@ -312,9 +313,15 @@ if __name__ == '__main__':
                         result = re.search(r"^CVE\-(\d{4})\-", cve_id)
                         if int(result.group(1)) <= expire_year :
                             reserved[cve_id]["state"] = "REJECTED"
-                            write_json_file(filename, reserved[cve_id])
+                            if not args.delete_rejected :
+                                write_json_file(filename, reserved[cve_id])
                             print("Local reservation for {} updated to expire reservation.".format(cve_id))
                             expired = expired + 1
+
+                    # Delete the local file of a rejected reservation if requested
+                    if file_valid and args.delete_rejected and reserved[cve_id]["state"] == "REJECTED" :
+                        os.remove(filename)
+                        print("Deleted local record for rejected reservation {}.".format(cve_id))
 
                     if file_valid:
                         del reserved[cve_id]
@@ -322,6 +329,9 @@ if __name__ == '__main__':
         # Write reservations we don't have locally
         for cve_id in sorted(reserved):
             if cve_id != "INVALID" :
+                if args.delete_rejected and reserved[cve_id]["state"] == "REJECTED" :
+                    print("Reservation file for {} does not exist, skipping rejected reservation.".format(cve_id))
+                    continue
                 print("Reservation file for {} does not exist".format(cve_id))
                 write_json_file("{}/{}.json".format(args.reservations_path,cve_id),reserved[cve_id])
                 print("Created {}/{}.json".format(args.reservations_path,cve_id))
